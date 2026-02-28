@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-XRAY_CONFIG="${XRAY_CONFIG:-/etc/xray/config.json}"
+XRAY_CONFIG="${XRAY_CONFIG:-/etc/xray/conf.json}"
 PROXY_PORT="${PROXY_PORT:-3128}"
 SOCKS_PORT="${SOCKS_PORT:-1080}"
 XRAY_SOCKS_PORT="${XRAY_SOCKS_PORT:-10808}"
@@ -61,9 +61,15 @@ echo "[entrypoint] Starting Xray..."
 xray run -config "$XRAY_CONFIG" &
 XRAY_PID=$!
 
-# Wait for Xray SOCKS5 to be ready
+# Wait for Xray SOCKS5 port to open (nc -z checks TCP connect)
+echo "[entrypoint] Waiting for Xray SOCKS5 on port ${XRAY_SOCKS_PORT}..."
 for i in $(seq 1 30); do
-    if wget -q --spider --proxy socks5h://127.0.0.1:${XRAY_SOCKS_PORT} http://ifconfig.me 2>/dev/null; then
+    # Check process is still alive
+    if ! kill -0 "$XRAY_PID" 2>/dev/null; then
+        echo "[entrypoint] ERROR: Xray process died. Check your config."
+        exit 1
+    fi
+    if nc -z 127.0.0.1 "${XRAY_SOCKS_PORT}" 2>/dev/null; then
         echo "[entrypoint] Xray is ready."
         break
     fi
