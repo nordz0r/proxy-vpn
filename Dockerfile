@@ -1,9 +1,16 @@
-# Stage 1: Build Xray
-FROM golang:1.24-alpine AS xray-builder
-RUN apk add --no-cache git
-RUN git clone --depth 1 https://github.com/XTLS/Xray-core.git /src
-WORKDIR /src
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /usr/bin/xray ./main
+# Stage 1: Download Xray release binary
+FROM alpine:3.21 AS xray-downloader
+RUN apk add --no-cache curl unzip
+ARG TARGETARCH
+RUN case "$TARGETARCH" in \
+      amd64)  ARCH="64" ;; \
+      arm64)  ARCH="arm64-v8a" ;; \
+      *)      ARCH="64" ;; \
+    esac && \
+    LATEST=$(curl -fsSL https://api.github.com/repos/XTLS/Xray-core/releases/latest | grep '"tag_name"' | cut -d'"' -f4) && \
+    curl -fsSL -o /tmp/xray.zip "https://github.com/XTLS/Xray-core/releases/download/${LATEST}/Xray-linux-${ARCH}.zip" && \
+    unzip /tmp/xray.zip xray -d /usr/bin/ && \
+    chmod +x /usr/bin/xray
 
 # Stage 2: Build 3proxy
 FROM alpine:3.21 AS proxy-builder
@@ -18,7 +25,7 @@ FROM alpine:3.21
 
 RUN apk add --no-cache bash ca-certificates
 
-COPY --from=xray-builder /usr/bin/xray /usr/bin/xray
+COPY --from=xray-downloader /usr/bin/xray /usr/bin/xray
 COPY --from=proxy-builder /src/bin/3proxy /usr/bin/3proxy
 
 COPY entrypoint.sh /entrypoint.sh
