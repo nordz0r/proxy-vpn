@@ -82,6 +82,16 @@ External to this container. Angie reverse proxy config example in `angie/` handl
 | `PROXY_USERS` | — | Multi-user auth (`user1:pass1,user2:pass2`) |
 | `PROXY_USER` | — | Single-user auth (legacy) |
 | `PROXY_PASS` | — | Single-user password (legacy) |
+| `METRICS_PORT` | — | Metrics HTTP port (empty = disabled) |
+
+## Monitoring & Metrics
+
+When `METRICS_PORT` is set (e.g., `METRICS_PORT=9999`), entrypoint injects Xray `stats` + `metrics` sections:
+
+- `http://127.0.0.1:${METRICS_PORT}/debug/vars` — JSON traffic stats (per inbound/outbound uplink/downlink)
+- `http://127.0.0.1:${METRICS_PORT}/debug/pprof/` — Go runtime profiling
+
+Metrics bind to `127.0.0.1` only (not exposed externally). To scrape remotely, tunnel or reverse-proxy.
 
 ## Shell Conventions
 

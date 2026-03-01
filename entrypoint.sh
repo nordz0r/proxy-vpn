@@ -5,6 +5,7 @@ XRAY_CONFIG="${XRAY_CONFIG:-/etc/xray/conf.json}"
 XRAY_RUNTIME_CONFIG="/tmp/xray.runtime.json"
 PROXY_PORT="${PROXY_PORT:-3128}"
 SOCKS_PORT="${SOCKS_PORT:-1080}"
+METRICS_PORT="${METRICS_PORT:-}"
 
 cleanup() {
     echo "[entrypoint] Shutting down..."
@@ -48,13 +49,25 @@ prepare_xray_config() {
         echo "[entrypoint] No auth configured, proxy is open."
     fi
 
+    local metrics_port="${METRICS_PORT:-0}"
+    if ! [[ "$metrics_port" =~ ^[0-9]+$ ]]; then
+        metrics_port=0
+    fi
+
     jq \
         --argjson proxyPort "$PROXY_PORT" \
         --argjson socksPort "$SOCKS_PORT" \
         --arg authMode "$auth_mode" \
-        --argjson accounts "$accounts_json" '
+        --argjson accounts "$accounts_json" \
+        --argjson metricsPort "$metrics_port" '
+
+        # Strip managed inbounds and any untagged leftovers
         .inbounds = (
-            ((.inbounds // []) | map(select((.tag // "") != "http-in" and (.tag // "") != "socks-in")))
+            ((.inbounds // []) | map(select(
+                (.tag // "") != "http-in" and
+                (.tag // "") != "socks-in" and
+                (.tag // "") != ""
+            )))
             + [
                 {
                     "tag": "http-in",
@@ -111,9 +124,31 @@ prepare_xray_config() {
                 {"type": "field", "ip": ["geoip:private", "geoip:ru"], "outboundTag": "direct"}
             ]
         }
+
+        # Metrics: stats collection + HTTP endpoint
+        | if $metricsPort > 0 then
+            .stats = {}
+            | .metrics = {
+                "tag": "metrics",
+                "listen": ("127.0.0.1:" + ($metricsPort | tostring))
+            }
+            | .policy = ((.policy // {}) * {
+                "system": {
+                    "statsInboundUplink": true,
+                    "statsInboundDownlink": true,
+                    "statsOutboundUplink": true,
+                    "statsOutboundDownlink": true
+                }
+            })
+          else del(.stats, .metrics)
+          end
     ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
 
     echo "[entrypoint] Routing: private networks and RU domains bypass proxy (direct)."
+
+    if [ "$metrics_port" -gt 0 ] 2>/dev/null; then
+        echo "[entrypoint] Metrics enabled on port ${metrics_port} (http://127.0.0.1:${metrics_port}/debug/vars)"
+    fi
 }
 
 prepare_xray_config

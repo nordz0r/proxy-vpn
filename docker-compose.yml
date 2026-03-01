@@ -7,6 +7,7 @@ services:
     expose:
       - "3128"   # HTTP proxy
       - "1080"   # SOCKS5 proxy
+      - "9999"   # Metrics (if METRICS_PORT=9999)
     network_mode: host
     volumes:
       - ${PWD}/conf/xray.json:/etc/xray/conf.json:ro
