@@ -12,13 +12,18 @@
 
 ## Запуск
 
-1. Положить выгруженный из Amnezia конфиг в `conf/dd.xray.radik.goldfinches.ru.json`
-   (этот файл используется по умолчанию как базовый).
+1. Подготовить рабочий базовый файл `conf/xray.json` (он используется по умолчанию).
 
-   Важно: править `inbounds` вручную не нужно — они будут перезаписаны в runtime через `entrypoint.sh`
-   с учетом портов и авторизации.
+   Удобно взять выгрузку Amnezia как исходник и сохранить в `conf/xray.json`.
 
-   Если нужно использовать другой файл, задайте `XRAY_BASE_CONFIG` в `.env`.
+   Пример:
+
+```sh
+cp conf/dd.xray.radik.goldfinches.ru.json conf/xray.json
+```
+
+   Важно: существующие `inbounds` в базовом конфиге сохраняются, но `entrypoint.sh` управляет
+   runtime-входами с тегами `http-in` и `socks-in` (обновляет/добавляет их с учетом портов и авторизации).
 
 2. Настроить пользователей (один из вариантов):
    - `PROXY_USERS=user1:pass1,user2:pass2`
@@ -34,11 +39,7 @@ docker compose up --build -d
 - `3128:3128` — HTTP proxy
 - `1080:1080` — SOCKS5 proxy
 
-Базовый конфиг, который монтируется в контейнер:
-
-```sh
-${XRAY_BASE_CONFIG:-conf/dd.xray.radik.goldfinches.ru.json}
-```
+Базовый конфиг, который монтируется в контейнер: `conf/xray.json`.
 
 ## Проверка
 
@@ -99,5 +100,5 @@ docker logs vpn-proxy
 
 ## Примечания
 
-- Базовый конфиг берется из `XRAY_BASE_CONFIG` (по умолчанию `conf/dd.xray.radik.goldfinches.ru.json`).
-- Inbounds формируются/перезаписываются в runtime через [`entrypoint.sh`](entrypoint.sh).
+- Базовый конфиг берется из `conf/xray.json`.
+- Inbounds с тегами `http-in` и `socks-in` формируются/обновляются в runtime через [`entrypoint.sh`](entrypoint.sh).

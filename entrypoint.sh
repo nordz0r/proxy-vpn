@@ -53,30 +53,33 @@ prepare_xray_config() {
         --argjson socksPort "$SOCKS_PORT" \
         --arg authMode "$auth_mode" \
         --argjson accounts "$accounts_json" '
-        .inbounds = [
-            {
-                "tag": "http-in",
-                "listen": "0.0.0.0",
-                "port": $proxyPort,
-                "protocol": "http",
-                "settings": (
-                    if $authMode == "password"
-                    then {"accounts": $accounts}
-                    else {}
-                    end
-                )
-            },
-            {
-                "tag": "socks-in",
-                "listen": "0.0.0.0",
-                "port": $socksPort,
-                "protocol": "socks",
-                "settings": (
-                    {"udp": true, "auth": $authMode}
-                    + (if $authMode == "password" then {"accounts": $accounts} else {} end)
-                )
-            }
-        ]
+        .inbounds = (
+            ((.inbounds // []) | map(select((.tag // "") != "http-in" and (.tag // "") != "socks-in")))
+            + [
+                {
+                    "tag": "http-in",
+                    "listen": "0.0.0.0",
+                    "port": $proxyPort,
+                    "protocol": "http",
+                    "settings": (
+                        if $authMode == "password"
+                        then {"accounts": $accounts}
+                        else {}
+                        end
+                    )
+                },
+                {
+                    "tag": "socks-in",
+                    "listen": "0.0.0.0",
+                    "port": $socksPort,
+                    "protocol": "socks",
+                    "settings": (
+                        {"udp": true, "auth": $authMode}
+                        + (if $authMode == "password" then {"accounts": $accounts} else {} end)
+                    )
+                }
+            ]
+        )
     ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
 }
 

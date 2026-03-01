@@ -6,7 +6,7 @@ services:
       - "3128:3128"   # HTTP proxy (only localhost — Angie proxies externally)
       - "1080:1080"   # SOCKS5 proxy
     volumes:
-      - ${PWD}/${XRAY_BASE_CONFIG:-conf/conf.json}:/etc/xray/conf.json:ro
+      - ${PWD}/conf/xray.json:/etc/xray/conf.json:ro
     environment:
       - PROXY_USERS=${PROXY_USERS:-}
       - PROXY_USER=${PROXY_USER:-}

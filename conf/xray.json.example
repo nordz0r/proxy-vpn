@@ -1,6 +1,16 @@
 {
+    "inbounds": [
+        {
+            "listen": "127.0.0.1",
+            "port": 10808,
+            "protocol": "socks",
+            "settings": {
+                "udp": true
+            }
+        }
+    ],
     "log": {
-        "loglevel": "warning"
+        "loglevel": "error"
     },
     "outbounds": [
         {
@@ -12,9 +22,9 @@
                         "port": 443,
                         "users": [
                             {
-                                "id": "your-uuid-here",
                                 "encryption": "none",
-                                "flow": "xtls-rprx-vision"
+                                "flow": "xtls-rprx-vision",
+                                "id": "your-uuid-here"
                             }
                         ]
                     }
@@ -22,14 +32,14 @@
             },
             "streamSettings": {
                 "network": "tcp",
-                "security": "reality",
                 "realitySettings": {
                     "fingerprint": "chrome",
-                    "serverName": "www.google.com",
                     "publicKey": "your-public-key",
+                    "serverName": "www.example.com",
                     "shortId": "your-short-id",
                     "spiderX": ""
-                }
+                },
+                "security": "reality"
             }
         }
     ]
