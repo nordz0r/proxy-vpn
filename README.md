@@ -1,21 +1,23 @@
-# proxy-vpn (3proxy -> Xray)
+# proxy-vpn (Xray only)
 
-Контейнер поднимает HTTP/SOCKS прокси на базе `3proxy`, а исходящий трафик прокси всегда отправляет в локальный SOCKS-инбаунд `xray`, который уже ходит во внешний VLESS/REALITY.
+Контейнер поднимает HTTP и SOCKS прокси напрямую в `xray`:
+- HTTP: `3128`
+- SOCKS5: `1080`
+
+Оба входа идут в один и тот же outbound VLESS/REALITY.
 
 ## Архитектура
 
-Цепочка внутри контейнера:
+`client(http:3128 or socks:1080) -> xray inbound -> xray outbound(VLESS/REALITY)`
 
-`client -> 3proxy(3128/1080) -> parent socks5 127.0.0.1:${XRAY_SOCKS_PORT} -> xray(127.0.0.1:10808) -> VLESS/REALITY remote`
-
-Ключевая строка маршрутизации генерируется в рантайме в [`entrypoint.sh`](entrypoint.sh):
-
-- [`parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}`](entrypoint.sh:50)
+`3proxy` больше не используется в runtime.
 
 ## Запуск
 
 1. Подготовить реальный конфиг Xray в `conf/xray.json` (файл gitignored).
-2. (Опционально) задать `PROXY_USER` и `PROXY_PASS` для auth.
+2. Настроить пользователей (один из вариантов):
+   - `PROXY_USERS=user1:pass1,user2:pass2`
+   - либо legacy-вариант: `PROXY_USER=user1` + `PROXY_PASS=pass1`
 3. Запустить:
 
 ```bash
@@ -25,13 +27,13 @@ docker compose up --build -d
 Публикуемые порты по умолчанию описаны в [`docker-compose.yml`](docker-compose.yml):
 
 - `3128:3128` — HTTP proxy
-- `1080:1080` — SOCKS proxy
+- `1080:1080` — SOCKS5 proxy
 
 ## Важная проверка (как убедиться, что 3128 идет через Xray)
 
 Проверки делать именно через прокси-порт, а не «прямым curl» из контейнера.
 
-### Внутри контейнера
+### С клиента / внутри контейнера
 
 1. Прямой выход контейнера (контроль):
 
@@ -45,29 +47,39 @@ curl https://2ip.ru
 curl --noproxy '' -x http://127.0.0.1:3128 https://2ip.ru
 ```
 
-3. Через Xray напрямую (контрольная точка):
+3. Через SOCKS5 1080 (контрольная точка):
 
 ```sh
-curl --socks5-hostname 127.0.0.1:10808 https://2ip.ru
+curl --socks5-hostname 127.0.0.1:1080 https://2ip.ru
 ```
 
 Ожидание: IP из шага 2 должен совпадать с шагом 3.
 
-Если без `--noproxy ''` получается «прямой» IP, значит `curl` обошел прокси из-за переменной окружения `NO_PROXY/no_proxy` (часто включает `127.0.0.1` и `localhost`).
+Если без `--noproxy ''` получается «прямой» IP, значит `curl` обошел прокси из-за переменной окружения `NO_PROXY/no_proxy`.
 
-## Что уже исправлено
+## Мультипользовательская авторизация
 
-Чтобы исключить неоднозначность правил 3proxy, конфиг теперь генерируется с явной привязкой `parent` к каждому сервису (`proxy` и `socks`) в отдельных секциях с `flush`. Это гарантирует, что обращения к `3128` не пойдут «напрямую», а будут прокинуты в Xray.
+`entrypoint` генерирует runtime-конфиг и подставляет одинаковые аккаунты в HTTP+SOCKS inbounds.
+
+Формат переменной:
+
+```sh
+PROXY_USERS=user1:pass1,user2:pass2,user3:pass3
+```
+
+Если `PROXY_USERS` не задан, но заданы `PROXY_USER` + `PROXY_PASS`, используется один пользователь.
+
+Если не задано ничего — прокси без пароля.
 
 ## Отладка
 
-Посмотреть сгенерированный 3proxy конфиг внутри контейнера:
+Проверить runtime-конфиг Xray:
 
 ```sh
-cat /etc/3proxy.cfg
+cat /tmp/xray.runtime.json
 ```
 
-Проверить логи:
+Проверить логи контейнера:
 
 ```sh
 docker logs vpn-proxy
@@ -75,5 +87,5 @@ docker logs vpn-proxy
 
 ## Примечания
 
-- Аутентификация включается только если одновременно заданы `PROXY_USER` и `PROXY_PASS`.
-- Статический `3proxy.cfg` не используется — конфиг всегда генерируется при старте контейнера.
+- Реальный конфиг хранится в `conf/xray.json` (gitignored).
+- В `conf/xray.json` задается outbound (VLESS/REALITY), а inbounds формируются в runtime через [`entrypoint.sh`](entrypoint.sh).

@@ -8,6 +8,7 @@ services:
     volumes:
       - ${PWD}/conf/xray.json:/etc/xray/conf.json:ro
     environment:
+      - PROXY_USERS=${PROXY_USERS:-}
       - PROXY_USER=${PROXY_USER:-}
       - PROXY_PASS=${PROXY_PASS:-}
     restart: unless-stopped

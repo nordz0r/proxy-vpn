@@ -4,11 +4,41 @@
     },
     "inbounds": [
         {
-            "listen": "127.0.0.1",
-            "port": 10808,
+            "tag": "http-in",
+            "listen": "0.0.0.0",
+            "port": 3128,
+            "protocol": "http",
+            "settings": {
+                "accounts": [
+                    {
+                        "user": "user1",
+                        "pass": "pass1"
+                    },
+                    {
+                        "user": "user2",
+                        "pass": "pass2"
+                    }
+                ]
+            }
+        },
+        {
+            "tag": "socks-in",
+            "listen": "0.0.0.0",
+            "port": 1080,
             "protocol": "socks",
             "settings": {
-                "udp": true
+                "auth": "password",
+                "udp": true,
+                "accounts": [
+                    {
+                        "user": "user1",
+                        "pass": "pass1"
+                    },
+                    {
+                        "user": "user2",
+                        "pass": "pass2"
+                    }
+                ]
             }
         }
     ],
