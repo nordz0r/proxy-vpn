@@ -88,7 +88,32 @@ prepare_xray_config() {
                 }
             ]
         )
+
+        # Tag first outbound as "proxy" if not tagged
+        | .outbounds = (
+            (.outbounds // [])
+            | if length > 0 and ((.[0].tag // "") == "")
+              then [.[0] + {"tag": "proxy"}] + .[1:]
+              else . end
+        )
+
+        # Add "direct" outbound (strip existing to avoid duplicates)
+        | .outbounds = (
+            [.outbounds[] | select((.tag // "") != "direct")]
+            + [{"tag": "direct", "protocol": "freedom", "settings": {}}]
+        )
+
+        # Routing: private networks and Russian domains bypass proxy
+        | .routing = {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {"type": "field", "domain": ["geosite:private", "geosite:category-ru"], "outboundTag": "direct"},
+                {"type": "field", "ip": ["geoip:private", "geoip:ru"], "outboundTag": "direct"}
+            ]
+        }
     ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
+
+    echo "[entrypoint] Routing: private networks and RU domains bypass proxy (direct)."
 }
 
 prepare_xray_config
