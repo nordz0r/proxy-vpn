@@ -66,7 +66,11 @@ prepare_xray_config() {
                         then {"accounts": $accounts}
                         else {}
                         end
-                    )
+                    ),
+                    "sniffing": {
+                        "enabled": true,
+                        "destOverride": ["http", "tls"]
+                    }
                 },
                 {
                     "tag": "socks-in",
@@ -76,7 +80,11 @@ prepare_xray_config() {
                     "settings": (
                         {"udp": true, "auth": $authMode}
                         + (if $authMode == "password" then {"accounts": $accounts} else {} end)
-                    )
+                    ),
+                    "sniffing": {
+                        "enabled": true,
+                        "destOverride": ["http", "tls"]
+                    }
                 }
             ]
         )

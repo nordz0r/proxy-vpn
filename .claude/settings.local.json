@@ -6,7 +6,8 @@
       "WebFetch(domain:docs.amnezia.org)",
       "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:en.angie.software)",
-      "WebFetch(domain:oneuptime.com)"
+      "WebFetch(domain:oneuptime.com)",
+      "WebFetch(domain:xtls.github.io)"
     ]
   }
 }
