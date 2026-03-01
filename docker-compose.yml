@@ -1,6 +1,6 @@
 services:
   vpn-proxy:
-    build: .
+    image: ghcr.io/nordz0r/proxy-vpn:latest
     container_name: vpn-proxy
     env_file:
       - .env

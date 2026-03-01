@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+.kilocode
+.idea
+.env
+.env.example
+.dockerignore
+angie/
+conf/xray.json
+docker-compose.yml
+CLAUDE.md
+README.md
+LICENSE
+*.md
