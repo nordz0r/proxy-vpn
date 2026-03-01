@@ -30,9 +30,19 @@ prepare_xray_config() {
         users_raw="${users_raw//;/,}"
         accounts_json=$(printf '%s' "$users_raw" | jq -R '
             split(",")
+            | map(gsub("^\\s+|\\s+$"; ""))
             | map(select(length > 0) | split(":"))
-            | map({user: .[0], pass: (.[1:] | join(":"))})
+            | map({
+                user: (.[0] | gsub("^\\s+|\\s+$"; "") | gsub("\\r$"; "")),
+                pass: (.[1:] | join(":") | gsub("^\\s+|\\s+$"; "") | gsub("\\r$"; ""))
+            })
+            | map(select(.user != "" and .pass != ""))
         ')
+
+        if [ "$(printf '%s' "$accounts_json" | jq 'length')" -eq 0 ]; then
+            echo "[entrypoint] ERROR: Auth is enabled but no valid users parsed from PROXY_USERS/PROXY_USER+PROXY_PASS."
+            exit 1
+        fi
         echo "[entrypoint] Auth users: $(printf '%s' "$accounts_json" | jq -r '[.[].user] | join(", ")')"
     else
         echo "[entrypoint] No auth configured, proxy is open."
