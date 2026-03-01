@@ -2,13 +2,12 @@ services:
   vpn-proxy:
     build: .
     container_name: vpn-proxy
-    ports:
-      - "3128:3128"   # HTTP proxy (only localhost — Angie proxies externally)
-      - "1080:1080"   # SOCKS5 proxy
+    env_file:
+      - .env
+    expose:
+      - "3128"   # HTTP proxy (only localhost — Angie proxies externally)
+      - "1080"   # SOCKS5 proxy
+    network_mode: host
     volumes:
       - ${PWD}/conf/xray.json:/etc/xray/conf.json:ro
-    environment:
-      - PROXY_USERS=${PROXY_USERS:-}
-      - PROXY_USER=${PROXY_USER:-}
-      - PROXY_PASS=${PROXY_PASS:-}
     restart: unless-stopped

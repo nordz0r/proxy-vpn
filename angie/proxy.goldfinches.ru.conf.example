@@ -6,19 +6,18 @@
 #       include /etc/angie/stream.d/*.conf;
 #   }
 #
-# Клиент подключается к proxy.goldfinches.ru:445 как HTTPS-прокси.
+# Клиент подключается к proxy.goldfinches.ru:444 как HTTPS-прокси.
 # Angie терминирует TLS и пробрасывает TCP в Xray.
 #
 # Настройка в браузере/системе:
-#   HTTPS proxy: proxy.goldfinches.ru:445
+#   HTTPS proxy: proxy.goldfinches.ru:444
 #
 # Настройка в curl:
-#   curl --proxy https://proxy.goldfinches.ru:445 https://ifconfig.me
+#   curl --proxy https://proxy.goldfinches.ru:444 https://ifconfig.me
 
 # HTTP proxy over TLS
 server {
-    listen 445 ssl;
-    listen [::]:445 ssl;
+    listen 444 ssl;
 
     ssl_certificate     /etc/letsencrypt/live/goldfinches.ru/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/goldfinches.ru/privkey.pem;
@@ -27,12 +26,11 @@ server {
 }
 
 # SOCKS5 over TLS (опционально)
-server {
-    listen 40080 ssl;
-    listen [::]:40080 ssl;
+# server {
+#    listen 445 ssl;
 
-    ssl_certificate     /etc/letsencrypt/live/goldfinches.ru/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/goldfinches.ru/privkey.pem;
+#    ssl_certificate     /etc/letsencrypt/live/goldfinches.ru/fullchain.pem;
+#    ssl_certificate_key /etc/letsencrypt/live/goldfinches.ru/privkey.pem;
 
-    proxy_pass 127.0.0.1:1080;
-}
+#    proxy_pass 127.0.0.1:1080;
+#}
