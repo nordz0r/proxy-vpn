@@ -12,7 +12,14 @@
 
 ## Запуск
 
-1. Подготовить реальный конфиг Xray в `conf/xray.json` (файл gitignored).
+1. Положить выгруженный из Amnezia конфиг в `conf/dd.xray.radik.goldfinches.ru.json`
+   (этот файл используется по умолчанию как базовый).
+
+   Важно: править `inbounds` вручную не нужно — они будут перезаписаны в runtime через `entrypoint.sh`
+   с учетом портов и авторизации.
+
+   Если нужно использовать другой файл, задайте `XRAY_BASE_CONFIG` в `.env`.
+
 2. Настроить пользователей (один из вариантов):
    - `PROXY_USERS=user1:pass1,user2:pass2`
    - либо legacy-вариант: `PROXY_USER=user1` + `PROXY_PASS=pass1`
@@ -26,6 +33,12 @@ docker compose up --build -d
 
 - `3128:3128` — HTTP proxy
 - `1080:1080` — SOCKS5 proxy
+
+Базовый конфиг, который монтируется в контейнер:
+
+```sh
+${XRAY_BASE_CONFIG:-conf/dd.xray.radik.goldfinches.ru.json}
+```
 
 ## Проверка
 
@@ -57,6 +70,9 @@ curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json | jq
 
 `entrypoint` генерирует runtime-конфиг и подставляет одинаковые аккаунты в HTTP+SOCKS inbounds.
 
+Важно: авторизация включается на входах контейнера (HTTP `3128` + SOCKS `1080`) и
+не должна прописываться вручную в базовом Xray-конфиге.
+
 Формат переменной:
 
 ```sh
@@ -83,5 +99,5 @@ docker logs vpn-proxy
 
 ## Примечания
 
-- Реальный конфиг хранится в `conf/xray.json` (gitignored).
-- В `conf/xray.json` задается outbound (VLESS/REALITY), а inbounds формируются в runtime через [`entrypoint.sh`](entrypoint.sh).
+- Базовый конфиг берется из `XRAY_BASE_CONFIG` (по умолчанию `conf/dd.xray.radik.goldfinches.ru.json`).
+- Inbounds формируются/перезаписываются в runtime через [`entrypoint.sh`](entrypoint.sh).
