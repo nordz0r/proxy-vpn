@@ -36,21 +36,31 @@ EOF
 auth strong
 users ${PROXY_USER}:CL:${PROXY_PASS}
 allow ${PROXY_USER}
+parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+proxy -p${PROXY_PORT} -a
+flush
+
+auth strong
+users ${PROXY_USER}:CL:${PROXY_PASS}
+allow ${PROXY_USER}
+parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+socks -p${SOCKS_PORT} -a
 EOF
     else
         cat >> /etc/3proxy.cfg <<EOF
 
 auth none
 allow *
-EOF
-    fi
-
-    cat >> /etc/3proxy.cfg <<EOF
-
 parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
 proxy -p${PROXY_PORT} -a
+flush
+
+auth none
+allow *
+parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
 socks -p${SOCKS_PORT} -a
 EOF
+    fi
 }
 
 echo "[entrypoint] Generating 3proxy config..."
