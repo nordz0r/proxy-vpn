@@ -12,21 +12,15 @@ RUN case "$TARGETARCH" in \
     unzip /tmp/xray.zip xray -d /usr/bin/ && \
     chmod +x /usr/bin/xray
 
-# Stage 2: Build 3proxy
-FROM alpine:3.21 AS proxy-builder
-RUN apk add --no-cache gcc musl-dev make git
-RUN git clone --depth 1 https://github.com/3proxy/3proxy.git /src
-WORKDIR /src
-RUN make -f Makefile.Linux
-RUN strip bin/3proxy
-
-# Stage 3: Final image
+# Stage 2: Final image
 FROM alpine:3.21
 
-RUN apk add --no-cache bash ca-certificates netcat-openbsd curl nmap jq
+RUN apk add --no-cache bash ca-certificates netcat-openbsd curl nmap jq dumb-init tzdata
+
+ENV TZ=Europe/Moscow
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY --from=xray-downloader /usr/bin/xray /usr/bin/xray
-COPY --from=proxy-builder /src/bin/3proxy /usr/bin/3proxy
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -36,4 +30,4 @@ EXPOSE 3128 1080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -q --spider --proxy http://127.0.0.1:3128 http://ifconfig.me || exit 1
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]
