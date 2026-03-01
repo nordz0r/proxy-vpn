@@ -7,7 +7,7 @@
 #   }
 #
 # Клиент подключается к proxy.goldfinches.ru:445 как HTTPS-прокси.
-# Angie терминирует TLS и пробрасывает TCP в 3proxy.
+# Angie терминирует TLS и пробрасывает TCP в Xray.
 #
 # Настройка в браузере/системе:
 #   HTTPS proxy: proxy.goldfinches.ru:445

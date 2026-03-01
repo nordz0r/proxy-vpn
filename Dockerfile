@@ -15,7 +15,7 @@ RUN case "$TARGETARCH" in \
 # Stage 2: Final image
 FROM alpine:3.21
 
-RUN apk add --no-cache bash ca-certificates netcat-openbsd curl nmap jq dumb-init tzdata
+RUN apk add --no-cache bash ca-certificates netcat-openbsd curl jq dumb-init tzdata nmap
 
 ENV TZ=Europe/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -28,6 +28,6 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 3128 1080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -q --spider --proxy http://127.0.0.1:3128 http://ifconfig.me || exit 1
+  CMD curl -sf -x http://127.0.0.1:3128 http://ifconfig.me > /dev/null || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]

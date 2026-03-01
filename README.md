@@ -10,8 +10,6 @@
 
 `client(http:3128 or socks:1080) -> xray inbound -> xray outbound(VLESS/REALITY)`
 
-`3proxy` больше не используется в runtime.
-
 ## Запуск
 
 1. Подготовить реальный конфиг Xray в `conf/xray.json` (файл gitignored).
@@ -29,28 +27,26 @@ docker compose up --build -d
 - `3128:3128` — HTTP proxy
 - `1080:1080` — SOCKS5 proxy
 
-## Важная проверка (как убедиться, что 3128 идет через Xray)
+## Проверка
 
 Проверки делать именно через прокси-порт, а не «прямым curl» из контейнера.
-
-### С клиента / внутри контейнера
 
 1. Прямой выход контейнера (контроль):
 
 ```sh
-curl https://2ip.ru
+curl https://ipinfo.io/json | jq
 ```
 
 2. Через HTTP прокси 3128 (с отключением bypass через `NO_PROXY`):
 
 ```sh
-curl --noproxy '' -x http://127.0.0.1:3128 https://2ip.ru
+curl --noproxy '' -x http://127.0.0.1:3128 https://ipinfo.io/json | jq
 ```
 
 3. Через SOCKS5 1080 (контрольная точка):
 
 ```sh
-curl --socks5-hostname 127.0.0.1:1080 https://2ip.ru
+curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json | jq
 ```
 
 Ожидание: IP из шага 2 должен совпадать с шагом 3.

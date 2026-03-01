@@ -16,7 +16,6 @@ trap cleanup SIGTERM SIGINT
 
 prepare_xray_config() {
     echo "[entrypoint] Preparing runtime Xray config..."
-    cp "$XRAY_CONFIG" "$XRAY_RUNTIME_CONFIG"
 
     local users_raw="${PROXY_USERS:-}"
     if [ -z "$users_raw" ] && [ -n "${PROXY_USER:-}" ] && [ -n "${PROXY_PASS:-}" ]; then
@@ -64,9 +63,7 @@ prepare_xray_config() {
                 )
             }
         ]
-    ' "$XRAY_RUNTIME_CONFIG" > "${XRAY_RUNTIME_CONFIG}.tmp"
-
-    mv "${XRAY_RUNTIME_CONFIG}.tmp" "$XRAY_RUNTIME_CONFIG"
+    ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
 }
 
 prepare_xray_config
@@ -76,6 +73,7 @@ xray run -config "$XRAY_RUNTIME_CONFIG" &
 XRAY_PID=$!
 
 echo "[entrypoint] Waiting for HTTP proxy on port ${PROXY_PORT} and SOCKS proxy on port ${SOCKS_PORT}..."
+ready=false
 for i in $(seq 1 30); do
     if ! kill -0 "$XRAY_PID" 2>/dev/null; then
         echo "[entrypoint] ERROR: Xray process died. Check your config."
@@ -84,14 +82,16 @@ for i in $(seq 1 30); do
 
     if nc -z 127.0.0.1 "${PROXY_PORT}" 2>/dev/null && nc -z 127.0.0.1 "${SOCKS_PORT}" 2>/dev/null; then
         echo "[entrypoint] Xray is ready (HTTP:${PROXY_PORT}, SOCKS:${SOCKS_PORT})."
+        ready=true
         break
     fi
-
-    if [ "$i" -eq 30 ]; then
-        echo "[entrypoint] ERROR: Xray readiness check timed out."
-        exit 1
-    fi
+    echo "[entrypoint] Waiting... (${i}/30)"
     sleep 1
 done
+
+if ! $ready; then
+    echo "[entrypoint] ERROR: Xray readiness check timed out."
+    exit 1
+fi
 
 wait "$XRAY_PID"
