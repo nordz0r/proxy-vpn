@@ -35,29 +35,29 @@ EOF
 
 auth strong
 users ${PROXY_USER}:CL:${PROXY_PASS}
-allow ${PROXY_USER}
 parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+allow ${PROXY_USER}
 proxy -p${PROXY_PORT} -a
 flush
 
 auth strong
 users ${PROXY_USER}:CL:${PROXY_PASS}
-allow ${PROXY_USER}
 parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+allow ${PROXY_USER}
 socks -p${SOCKS_PORT} -a
 EOF
     else
         cat >> /etc/3proxy.cfg <<EOF
 
 auth none
-allow *
 parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+allow *
 proxy -p${PROXY_PORT} -a
 flush
 
 auth none
-allow *
 parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
+allow *
 socks -p${SOCKS_PORT} -a
 EOF
     fi
