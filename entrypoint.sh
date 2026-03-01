@@ -28,7 +28,6 @@ logformat "L%t %N:%p %E %C:%c %R:%r %O %I"
 maxconn 200
 timeouts 1 5 30 60 180 1800 15 60
 
-parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
 EOF
 
     if [ -n "$PROXY_USER" ] && [ -n "$PROXY_PASS" ]; then
@@ -36,7 +35,6 @@ EOF
 
 auth strong
 users ${PROXY_USER}:CL:${PROXY_PASS}
-
 allow ${PROXY_USER}
 EOF
     else
@@ -49,6 +47,7 @@ EOF
 
     cat >> /etc/3proxy.cfg <<EOF
 
+parent 1000 socks5 127.0.0.1 ${XRAY_SOCKS_PORT}
 proxy -p${PROXY_PORT} -a
 socks -p${SOCKS_PORT} -a
 EOF

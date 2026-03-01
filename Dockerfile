@@ -23,7 +23,7 @@ RUN strip bin/3proxy
 # Stage 3: Final image
 FROM alpine:3.21
 
-RUN apk add --no-cache bash ca-certificates
+RUN apk add --no-cache bash ca-certificates netcat-openbsd
 
 COPY --from=xray-downloader /usr/bin/xray /usr/bin/xray
 COPY --from=proxy-builder /src/bin/3proxy /usr/bin/3proxy
