@@ -1,11 +1,11 @@
 services:
   vpn-proxy:
-    build: .
+    image: ghcr.io/nordz0r/proxy-vpn:latest
     container_name: vpn-proxy
     env_file:
       - .env
     expose:
-      - "3128"   # HTTP proxy (only localhost — Angie proxies externally)
+      - "3128"   # HTTP proxy
       - "1080"   # SOCKS5 proxy
     network_mode: host
     volumes:

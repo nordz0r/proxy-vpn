@@ -1,6 +1,6 @@
 # Project Debug Rules (Non-Obvious Only)
 
-- First check container logs because both daemons are started from one shell entrypoint: `docker compose logs -f vpn-proxy` (startup failures in one process can terminate both via [`wait -n`](entrypoint.sh:85)).
-- Xray can fail “softly”: readiness loop in [`entrypoint.sh`](entrypoint.sh) times out after 30s and still starts 3proxy, so an open proxy port does not prove tunnel health.
-- Validate the chain in order: xray local socks (`${XRAY_SOCKS_PORT}`) -> 3proxy (`3128/1080`) -> external endpoint; mismatch between [`entrypoint.sh`](entrypoint.sh) and [`conf/xray.json`](conf/xray.json) is a common hidden breakage.
-- If auth behaves unexpectedly, confirm BOTH env vars are set; a single missing var silently switches to open access path in [`generate_3proxy_config`](entrypoint.sh:19).
+- Use [`docker compose logs -f vpn-proxy`](README.md:98) first: startup/auth parse errors are emitted only by `[entrypoint]` lines in [`entrypoint.sh`](entrypoint.sh).
+- Readiness is strict in [`entrypoint.sh`](entrypoint.sh): timeout at 30s exits with code 1, so container restarts can look like random crashes under `restart: unless-stopped` in [`docker-compose.yml`](docker-compose.yml).
+- To inspect generated runtime config, use [`cat /tmp/xray.runtime.json`](README.md:92); debugging only [`conf/xray.json`](conf/xray.json) misses injected `http-in`/`socks-in`.
+- Auth debugging pitfall: malformed `PROXY_USERS` (including empty entries after `,`/`;`) can collapse to zero valid users and hard-fail at [`entrypoint.sh`](entrypoint.sh).

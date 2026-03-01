@@ -1,6 +1,7 @@
 # Project Architecture Rules (Non-Obvious Only)
 
-- Runtime architecture is intentionally two-process-in-one-container: [`entrypoint.sh`](entrypoint.sh) starts `xray` and `3proxy` in background, then orchestrates lifecycle via trap + [`wait -n`](entrypoint.sh:85).
-- Data path is hard-coupled: client -> 3proxy (`3128` HTTP / `1080` SOCKS) -> local Xray SOCKS inbound (`127.0.0.1:${XRAY_SOCKS_PORT}`) -> Xray outbound; changing one leg requires synchronized edits in [`entrypoint.sh`](entrypoint.sh) and [`conf/xray.json.example`](conf/xray.json.example).
-- Deployment assumes external TLS termination (Angie stream proxy) rather than TLS in 3proxy container; examples map TLS listeners to raw local ports in [`angie/proxy.goldfinches.ru.conf.example`](angie/proxy.goldfinches.ru.conf.example).
-- Secrets boundary is file-based, not env-only: compose bind-mounts host [`conf/xray.json`](conf/xray.json) into container as read-only `/etc/xray/conf.json` from [`docker-compose.yml`](docker-compose.yml).
+- Runtime architecture is single-process-in-container now: [`entrypoint.sh`](entrypoint.sh) starts only Xray and waits on one PID via [`wait "$XRAY_PID"`](entrypoint.sh:122).
+- Inbound lifecycle is declarative-by-tag: [`prepare_xray_config()`](entrypoint.sh:17) removes existing `http-in`/`socks-in` entries and recreates them each start; static edits to those tags in base config are overwritten.
+- Readiness gate is part of architecture, not monitoring only: both HTTP+SOCKS listeners must come up before service is considered alive ([`entrypoint.sh`](entrypoint.sh), loop around [`nc -z`](entrypoint.sh:108)).
+- Deployment contract depends on `network_mode: host` in [`docker-compose.yml`](docker-compose.yml): docs and Angie stream mapping assume host-local `127.0.0.1:3128/1080` reachability.
+- TLS is intentionally externalized: [`angie/proxy.goldfinches.ru.conf.example`](angie/proxy.goldfinches.ru.conf.example) terminates TLS and forwards raw TCP to local proxy ports.
