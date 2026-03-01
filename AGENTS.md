@@ -2,12 +2,17 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-- Stack is container-only: `alpine` image with `xray` via [`entrypoint.sh`](entrypoint.sh). No 3proxy.
-- There is no app-level build/lint/test framework in repo (no `package.json`/`pyproject`/test tree). Use Docker workflows only.
-- Main run command: `docker compose up --build -d` from repo root; config mount expects real [`conf/xray.json`](conf/xray.json) (example file is [`conf/xray.json.example`](conf/xray.json.example)).
-- `conf/xray.json` should contain only `log` and `outbounds` sections. Inbounds (HTTP 3128 + SOCKS 1080) are injected at runtime by [`entrypoint.sh`](entrypoint.sh).
-- Smoke test: `curl -x http://127.0.0.1:3128 https://ipinfo.io/json | jq`.
-- Auth is configured via `PROXY_USERS=user1:pass1,user2:pass2` (preferred) or legacy `PROXY_USER`+`PROXY_PASS`. If nothing is set, proxy runs without authentication.
-- Xray readiness gate is TCP probe (`nc -z`) with 30s timeout; on timeout proxy still starts (warning only), so failures can be partially hidden.
-- Important repo convention: secrets/runtime config are ignored by git (`.env`, `conf/xray.json`) per [`.gitignore`](.gitignore).
-- Angie TLS termination examples in [`angie/proxy.goldfinches.ru.conf.example`](angie/proxy.goldfinches.ru.conf.example) forward raw TCP to local 3128/1080; keep container ports unchanged unless updating that mapping.
+- Stack is Xray-only in one container: runtime inbounds are generated in [`entrypoint.sh`](entrypoint.sh), not stored statically.
+- No app-level lint/type/test runner exists; operational checks are Docker + curl from [`README.md`](README.md).
+- Build/run: `docker compose up --build -d`.
+- Logs: `docker compose logs -f vpn-proxy`.
+- Single-path check (HTTP only): `curl --noproxy '' -x http://127.0.0.1:3128 https://ipinfo.io/json | jq`.
+- Single-path check (SOCKS only): `curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json | jq`.
+- Base config mount is mandatory: [`docker-compose.yml`](docker-compose.yml) binds host [`conf/xray.json`](conf/xray.json) to `/etc/xray/conf.json`; [`conf/xray.json.example`](conf/xray.json.example) is just a template.
+- Inbound ownership is tag-based in [`prepare_xray_config()`](entrypoint.sh:17): tags `http-in` and `socks-in` are replaced at startup.
+- Auth parser in [`prepare_xray_config()`](entrypoint.sh:17) accepts comma/semicolon separators and keeps `:` inside password (`split(":")` + join tail); invalid/empty user list is fatal (`exit 1`).
+- Auth precedence is fixed: `PROXY_USERS` first, fallback to `PROXY_USER`+`PROXY_PASS`, otherwise open proxy (see [`entrypoint.sh`](entrypoint.sh)).
+- Runtime style conventions in shell code: `set -e`, uppercase env knobs, lowercase `local` vars, explicit fail-fast `exit 1`, and `[entrypoint]` log prefix.
+- Readiness is hard-fail: both ports (`3128` and `1080`) must open within 30 seconds or container exits (see [`entrypoint.sh`](entrypoint.sh)).
+- Secrets boundary is file-based and gitignored in [`.gitignore`](.gitignore): [`.env`](.env) and [`conf/xray.json`](conf/xray.json).
+- External AI rules: no `CLAUDE.md`/`.cursorrules`/Copilot instructions in repo; [`.claude/settings.local.json`](.claude/settings.local.json) is tool-permission metadata only.

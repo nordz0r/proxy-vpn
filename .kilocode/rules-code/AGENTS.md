@@ -1,7 +1,8 @@
 # Project Coding Rules (Non-Obvious Only)
 
-- Do not commit or template runtime secrets: real Xray config must stay in [`conf/xray.json`](conf/xray.json) and is intentionally gitignored in [`.gitignore`](.gitignore).
-- Do not introduce a static 3proxy config file in repo; startup always regenerates it via [`generate_3proxy_config`](entrypoint.sh:19).
-- Keep auth logic exactly pair-based: only BOTH `PROXY_USER` and `PROXY_PASS` enable `auth strong`; a single variable set falls back to open proxy (see [`entrypoint.sh`](entrypoint.sh)).
-- Preserve the chained topology `3proxy -> local xray socks` and port coupling (`XRAY_SOCKS_PORT` in both Xray inbound and 3proxy parent) across edits in [`entrypoint.sh`](entrypoint.sh) and [`conf/xray.json.example`](conf/xray.json.example).
-- Keep multi-process shell model (`xray` + `3proxy`) and shutdown behavior compatible with [`wait -n`](entrypoint.sh:85) and trap cleanup.
+- Do not commit runtime secrets: real [`conf/xray.json`](conf/xray.json) and [`.env`](.env) are gitignored in [`.gitignore`](.gitignore).
+- Treat [`conf/xray.json`](conf/xray.json) as base outbound/log config: runtime inbounds are rebuilt by [`prepare_xray_config()`](entrypoint.sh:17) and tags `http-in`/`socks-in` are replaced every start.
+- Preserve auth precedence in [`prepare_xray_config()`](entrypoint.sh:17): `PROXY_USERS` > (`PROXY_USER` + `PROXY_PASS`) > open proxy.
+- Keep parser behavior in [`prepare_xray_config()`](entrypoint.sh:31): both `,` and `;` separators are valid, and `:` inside password is preserved via `split(":")` + tail join.
+- Keep fail-fast behavior: invalid/empty parsed auth list exits with code 1 in [`prepare_xray_config()`](entrypoint.sh:42).
+- If changing ports, update all coupled points together: env defaults in [`entrypoint.sh`](entrypoint.sh), readiness probes in [`entrypoint.sh`](entrypoint.sh), and published endpoints in [`README.md`](README.md)/[`angie/proxy.goldfinches.ru.conf.example`](angie/proxy.goldfinches.ru.conf.example).
