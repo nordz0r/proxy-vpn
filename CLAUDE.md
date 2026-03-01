@@ -36,14 +36,16 @@ Both IPs should match and differ from your host IP.
 
 ### Runtime Inbound Injection
 
-`entrypoint.sh` is the core logic. The `prepare_xray_config()` function (line 17):
+`entrypoint.sh` is the core logic. The `prepare_xray_config()` function:
 
 1. Reads base config from `$XRAY_CONFIG` (default `/etc/xray/conf.json`, mounted from `conf/xray.json`)
 2. Strips any existing inbounds tagged `http-in` / `socks-in` (preserves all other inbounds)
 3. Injects fresh HTTP and SOCKS5 inbounds with auth and sniffing settings
-4. Writes result to `/tmp/xray.runtime.json`
+4. Tags the first outbound as `proxy` (if not tagged) and adds a `direct` (freedom) outbound
+5. Injects routing rules: `geoip:private`, `geoip:ru`, `geosite:private`, `geosite:category-ru` → direct; everything else → proxy
+6. Writes result to `/tmp/xray.runtime.json`
 
-Static edits to `http-in`/`socks-in` in the base config are overwritten on every container start.
+Static edits to `http-in`/`socks-in`/routing in the base config are overwritten on every container start.
 
 ### Auth Precedence (fixed order)
 

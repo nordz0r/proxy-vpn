@@ -9,7 +9,8 @@
       "WebFetch(domain:oneuptime.com)",
       "WebFetch(domain:xtls.github.io)",
       "Bash(read hash:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(find:*)"
     ]
   }
 }

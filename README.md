@@ -1,104 +1,108 @@
-# proxy-vpn (Xray only)
+# proxy-vpn
 
-Контейнер поднимает HTTP и SOCKS прокси напрямую в `xray`:
-- HTTP: `3128`
-- SOCKS5: `1080`
+Containerized HTTP/SOCKS5 proxy over Xray (VLESS + REALITY). Single Alpine container, single process, zero additional daemons.
 
-Оба входа идут в один и тот же outbound VLESS/REALITY.
-
-## Архитектура
-
-`client(http:3128 or socks:1080) -> xray inbound -> xray outbound(VLESS/REALITY)`
-
-## Запуск
-
-1. Подготовить рабочий базовый файл `conf/xray.json` (он используется по умолчанию).
-
-   Удобно взять выгрузку Amnezia как исходник и сохранить в `conf/xray.json`.
-
-   Пример:
-
-```sh
-cp conf/dd.xray.radik.goldfinches.ru.json conf/xray.json
+```
+client ──► HTTP :3128  ─┐
+                        ├──► xray ──► VLESS/REALITY ──► internet
+client ──► SOCKS :1080 ─┘
 ```
 
-   Важно: существующие `inbounds` в базовом конфиге сохраняются, но `entrypoint.sh` управляет
-   runtime-входами с тегами `http-in` и `socks-in` (обновляет/добавляет их с учетом портов и авторизации).
+Private networks and Russian domains are routed **directly**, bypassing the tunnel.
 
-2. Настроить пользователей (один из вариантов):
-   - `PROXY_USERS=user1:pass1,user2:pass2`
-   - либо legacy-вариант: `PROXY_USER=user1` + `PROXY_PASS=pass1`
-3. Запустить:
+## Quick Start
+
+**1. Prepare Xray config**
+
+```bash
+cp conf/xray.json.example conf/xray.json
+# Edit conf/xray.json — set your server address, UUID, REALITY keys
+```
+
+**2. Configure environment**
+
+```bash
+cp .env.example .env
+# Edit .env — set proxy credentials
+```
+
+**3. Run**
 
 ```bash
 docker compose up --build -d
 ```
 
-Публикуемые порты по умолчанию описаны в [`docker-compose.yml`](docker-compose.yml):
+## Configuration
 
-- `3128:3128` — HTTP proxy
-- `1080:1080` — SOCKS5 proxy
+### Environment Variables
 
-Базовый конфиг, который монтируется в контейнер: `conf/xray.json`.
+| Variable | Default | Description |
+|---|---|---|
+| `PROXY_PORT` | `3128` | HTTP proxy port |
+| `SOCKS_PORT` | `1080` | SOCKS5 proxy port |
+| `PROXY_USERS` | — | Multi-user auth: `user1:pass1,user2:pass2` |
+| `PROXY_USER` | — | Single-user auth (fallback) |
+| `PROXY_PASS` | — | Single-user password (fallback) |
+| `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
 
-## Проверка
+### Authentication
 
-Проверки делать именно через прокси-порт, а не «прямым curl» из контейнера.
+Auth is configured via environment variables, **not** in `xray.json`.
 
-1. Прямой выход контейнера (контроль):
+```bash
+# Multiple users (comma or semicolon separated)
+PROXY_USERS=alice:secret1,bob:secret2
 
-```sh
-curl https://ipinfo.io/json | jq
+# Single user (legacy)
+PROXY_USER=alice
+PROXY_PASS=secret1
+
+# No variables set = open proxy (no auth)
 ```
 
-2. Через HTTP прокси 3128 (с отключением bypass через `NO_PROXY`):
+### Routing
 
-```sh
-curl --noproxy '' -x http://127.0.0.1:3128 https://ipinfo.io/json | jq
+The entrypoint automatically injects routing rules:
+
+| Match | Action |
+|---|---|
+| `geoip:private` + `geoip:ru` | Direct (bypass tunnel) |
+| `geosite:private` + `geosite:category-ru` | Direct (bypass tunnel) |
+| Everything else | Proxy (VLESS/REALITY) |
+
+## Verify
+
+```bash
+# Should show your VPN server IP
+curl -x http://127.0.0.1:3128 https://ipinfo.io/json
+
+# Should show your real IP (Russian site, bypassed)
+curl -x http://127.0.0.1:3128 https://2ip.ru
+
+# SOCKS5 check
+curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json
 ```
 
-3. Через SOCKS5 1080 (контрольная точка):
+## TLS Termination (optional)
 
-```sh
-curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json | jq
+See [`angie/stream-proxy.conf.example`](angie/stream-proxy.conf.example) for wrapping the proxy ports in TLS using Angie/nginx stream module.
+
+## Architecture
+
+- **entrypoint.sh** generates `/tmp/xray.runtime.json` at container start:
+  - Injects `http-in` / `socks-in` inbounds with auth and sniffing
+  - Injects `direct` outbound (freedom protocol) and routing rules
+  - Tags the first outbound in base config as `proxy`
+- **network_mode: host** — ports bind directly on the host
+- **dumb-init** as PID 1 for proper signal handling
+- Readiness check: both ports must respond within 30 seconds
+
+## Debugging
+
+```bash
+# Container logs
+docker compose logs -f vpn-proxy
+
+# Inspect generated runtime config
+docker exec vpn-proxy cat /tmp/xray.runtime.json | jq
 ```
-
-Ожидание: IP из шага 2 должен совпадать с шагом 3.
-
-Если без `--noproxy ''` получается «прямой» IP, значит `curl` обошел прокси из-за переменной окружения `NO_PROXY/no_proxy`.
-
-## Мультипользовательская авторизация
-
-`entrypoint` генерирует runtime-конфиг и подставляет одинаковые аккаунты в HTTP+SOCKS inbounds.
-
-Важно: авторизация включается на входах контейнера (HTTP `3128` + SOCKS `1080`) и
-не должна прописываться вручную в базовом Xray-конфиге.
-
-Формат переменной:
-
-```sh
-PROXY_USERS=user1:pass1,user2:pass2,user3:pass3
-```
-
-Если `PROXY_USERS` не задан, но заданы `PROXY_USER` + `PROXY_PASS`, используется один пользователь.
-
-Если не задано ничего — прокси без пароля.
-
-## Отладка
-
-Проверить runtime-конфиг Xray:
-
-```sh
-cat /tmp/xray.runtime.json
-```
-
-Проверить логи контейнера:
-
-```sh
-docker logs vpn-proxy
-```
-
-## Примечания
-
-- Базовый конфиг берется из `conf/xray.json`.
-- Inbounds с тегами `http-in` и `socks-in` формируются/обновляются в runtime через [`entrypoint.sh`](entrypoint.sh).
