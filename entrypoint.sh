@@ -27,11 +27,15 @@ prepare_xray_config() {
 
     if [ -n "$users_raw" ]; then
         auth_mode="password"
+        users_raw="${users_raw//;/,}"
         accounts_json=$(printf '%s' "$users_raw" | jq -R '
             split(",")
             | map(select(length > 0) | split(":"))
             | map({user: .[0], pass: (.[1:] | join(":"))})
         ')
+        echo "[entrypoint] Auth users: $(printf '%s' "$accounts_json" | jq -r '[.[].user] | join(", ")')"
+    else
+        echo "[entrypoint] No auth configured, proxy is open."
     fi
 
     jq \
