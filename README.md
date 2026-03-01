@@ -39,10 +39,10 @@ docker compose up --build -d
 curl https://2ip.ru
 ```
 
-2. Через HTTP прокси 3128:
+2. Через HTTP прокси 3128 (с отключением bypass через `NO_PROXY`):
 
 ```sh
-curl -x http://127.0.0.1:3128 https://2ip.ru
+curl --noproxy '' -x http://127.0.0.1:3128 https://2ip.ru
 ```
 
 3. Через Xray напрямую (контрольная точка):
@@ -52,6 +52,8 @@ curl --socks5-hostname 127.0.0.1:10808 https://2ip.ru
 ```
 
 Ожидание: IP из шага 2 должен совпадать с шагом 3.
+
+Если без `--noproxy ''` получается «прямой» IP, значит `curl` обошел прокси из-за переменной окружения `NO_PROXY/no_proxy` (часто включает `127.0.0.1` и `localhost`).
 
 ## Что уже исправлено
 
