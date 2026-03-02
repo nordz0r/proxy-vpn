@@ -14,10 +14,17 @@
 #
 # Настройка в curl:
 #   curl --proxy https://proxy.example.com:444 https://ifconfig.me
+#   curl -x http://proxy.example.com:80 https://ifconfig.me
 
-# HTTP proxy over TLS
+# HTTP proxy (без TLS)
 server {
-    listen 444 ssl;
+   listen 444;
+   proxy_pass 127.0.0.1:3128;
+}
+
+# HTTPS proxy over TLS
+server {
+    listen 446 ssl;
 
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
