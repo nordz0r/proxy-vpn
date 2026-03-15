@@ -1,144 +1,172 @@
 # proxy-vpn
 
-Containerized HTTP/SOCKS5 proxy over Xray (VLESS + REALITY). Single Alpine container, single process, zero additional daemons.
+[![Release](https://img.shields.io/github/v/release/nordz0r/proxy-vpn?style=flat-square)](https://github.com/nordz0r/proxy-vpn/releases)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-nordz0r%2Fproxy--vpn-blue?style=flat-square)](https://ghcr.io/nordz0r/proxy-vpn)
+[![License](https://img.shields.io/github/license/nordz0r/proxy-vpn?style=flat-square)](LICENSE)
+
+**[English version](README.en.md)**
+
+HTTP/HTTPS и SOCKS5 прокси-сервер на базе [Xray-core](https://github.com/XTLS/Xray-core) в Docker-контейнере. Принимает конфиги, экспортированные из **[Amnezia VPN](https://amnezia.org/)** (протокол VLESS + REALITY), и превращает их в полноценный прокси для браузера, системы или любого приложения.
+
+## Зачем это нужно
+
+Amnezia VPN генерирует конфигурации Xray (VLESS + REALITY) для обхода блокировок. Этот проект берёт такой конфиг и поднимает на его основе HTTP/SOCKS5 прокси-сервер, к которому можно подключить:
+
+- браузер (через настройки прокси или расширения вроде FoxyProxy)
+- мобильные устройства и IoT
+- приложения и скрипты (`curl`, `wget`, и т.д.)
+- любые устройства в локальной сети
 
 ```
-client ──► HTTP :3128  ─┐
-                        ├──► xray ──► VLESS/REALITY ──► internet
-client ──► SOCKS :1080 ─┘
+Клиент ──► HTTP  :3128  ─┐
+                          ├──► Xray ──► VLESS/REALITY ──► Интернет
+Клиент ──► SOCKS :1080  ─┘
 ```
 
-Private networks and Russian domains are routed **directly**, bypassing the tunnel.
+Приватные сети и российские домены маршрутизируются **напрямую**, минуя туннель.
 
-## Quick Start
+## Возможности
 
-**1. Prepare Xray config**
+- **HTTP и SOCKS5 прокси** — два протокола одновременно
+- **Конфиги из Amnezia VPN** — используйте экспортированный Xray JSON как есть
+- **VLESS + REALITY** — современный протокол обхода DPI-блокировок
+- **Раздельная маршрутизация** — российские домены/IP и приватные сети идут напрямую
+- **Аутентификация** — поддержка нескольких пользователей
+- **Пользовательские домены для прямого доступа** — настройка через переменные окружения
+- **Метрики Xray** — опциональный HTTP-эндпоинт статистики
+- **Multi-arch** — `linux/amd64` и `linux/arm64`
+- **Минимальный образ** — Alpine Linux, один процесс, ~30 МБ
+
+## Быстрый старт
+
+### 1. Подготовьте конфиг Xray
+
+Экспортируйте конфигурацию из Amnezia VPN в формате Xray JSON или создайте вручную:
 
 ```bash
 cp conf/xray.json.example conf/xray.json
-# Edit conf/xray.json — set your server address, UUID, REALITY keys
+# Отредактируйте conf/xray.json — укажите адрес сервера, UUID, ключи REALITY
 ```
 
-**2. Configure environment**
+### 2. Настройте окружение
 
 ```bash
 cp .env.example .env
-# Edit .env — set proxy credentials
+# Отредактируйте .env — задайте логин и пароль для прокси
 ```
 
-**3. Run**
+### 3. Запустите
+
+```bash
+docker compose up -d
+```
+
+Образ автоматически скачается из GitHub Container Registry.
+
+Для сборки локально:
 
 ```bash
 docker compose up --build -d
 ```
 
-## Configuration
+## Конфигурация
 
-### Environment Variables
+### Переменные окружения
 
-| Variable | Default | Description |
+| Переменная | По умолчанию | Описание |
 |---|---|---|
-| `PROXY_PORT` | `3128` | HTTP proxy port |
-| `SOCKS_PORT` | `1080` | SOCKS5 proxy port |
-| `PROXY_USERS` | — | Multi-user auth: `user1:pass1,user2:pass2` |
-| `PROXY_USER` | — | Single-user auth (fallback) |
-| `PROXY_PASS` | — | Single-user password (fallback) |
-| `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
-| `DIRECT_DOMAINS` | — | Comma/semicolon list of domains for direct bypass, supports wildcard prefix (`*.example.com`) |
+| `PROXY_PORT` | `3128` | Порт HTTP-прокси |
+| `SOCKS_PORT` | `1080` | Порт SOCKS5-прокси |
+| `PROXY_USERS` | — | Мульти-аутентификация: `user1:pass1,user2:pass2` |
+| `PROXY_USER` | — | Логин (одиночный пользователь, fallback) |
+| `PROXY_PASS` | — | Пароль (одиночный пользователь, fallback) |
+| `XRAY_CONFIG` | `/etc/xray/conf.json` | Путь к базовому конфигу внутри контейнера |
+| `DIRECT_DOMAINS` | — | Домены для прямого доступа (через запятую/точку с запятой), поддержка `*.example.com` |
+| `METRICS_PORT` | — | Порт HTTP-метрик Xray (например, `9999`) |
 
-### Authentication
+### Аутентификация
 
-Auth is configured via environment variables, **not** in `xray.json`.
+Настраивается через переменные окружения, **не** в `xray.json`:
 
 ```bash
-# Multiple users (comma or semicolon separated)
+# Несколько пользователей (через запятую или точку с запятой)
 PROXY_USERS=alice:secret1,bob:secret2
 
-# Single user (legacy)
+# Один пользователь
 PROXY_USER=alice
 PROXY_PASS=secret1
 
-# No variables set = open proxy (no auth)
+# Без переменных = открытый прокси (без аутентификации)
 ```
 
-Direct bypass domains via env:
+### Маршрутизация
+
+Entrypoint автоматически добавляет правила маршрутизации:
+
+| Совпадение | Действие |
+|---|---|
+| `geoip:private` + `geoip:ru` | Напрямую (минуя туннель) |
+| `geosite:private` + `geosite:category-ru` + `domain:local` + `DIRECT_DOMAINS` | Напрямую (минуя туннель) |
+| Всё остальное | Через прокси (VLESS/REALITY) |
+
+Добавление пользовательских доменов для прямого доступа:
 
 ```bash
 DIRECT_DOMAINS=*.corp.local,*.lan,example.internal
 ```
 
-### Routing
-
-The entrypoint automatically injects routing rules:
-
-| Match | Action |
-|---|---|
-| `geoip:private` + `geoip:ru` | Direct (bypass tunnel) |
-| `geosite:private` + `geosite:category-ru` + `domain:local` + `DIRECT_DOMAINS` | Direct (bypass tunnel) |
-| Everything else | Proxy (VLESS/REALITY) |
-
-## Verify
+## Проверка работы
 
 ```bash
-# Should show your VPN server IP
-curl -x http://127.0.0.1:3128 https://ipinfo.io/json
+# Должен показать IP VPN-сервера
+curl -x http://user:pass@127.0.0.1:3128 https://ipinfo.io/json
 
-# Should show your real IP (Russian site, bypassed)
-curl -x http://127.0.0.1:3128 https://2ip.ru
+# Должен показать ваш реальный IP (российский сайт — идёт напрямую)
+curl -x http://user:pass@127.0.0.1:3128 https://2ip.ru
 
-# SOCKS5 check
-curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json
+# Проверка SOCKS5
+curl --socks5-hostname user:pass@127.0.0.1:1080 https://ipinfo.io/json
 ```
 
-## TLS Termination (optional)
+## TLS-терминация (опционально)
 
-Example stream config for Angie/nginx (TLS termination in front of local proxy ports):
+Пример конфигурации Angie/nginx для TLS-терминации перед локальными портами прокси:
 
 ```nginx
-# Ensure angie/nginx has:
+# Убедитесь, что в конфиге есть:
 # stream {
 #   include /etc/angie/stream.d/*.conf;
 # }
 
-# HTTP proxy without TLS
-server {
-    listen 444;
-    proxy_pass 127.0.0.1:3128;
-}
-
-# HTTPS proxy over TLS
+# HTTPS-прокси через TLS
 server {
     listen 446 ssl;
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
     proxy_pass 127.0.0.1:3128;
 }
-
-# SOCKS5 over TLS (optional)
-# server {
-#     listen 445 ssl;
-#     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
-#     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
-#     proxy_pass 127.0.0.1:1080;
-# }
 ```
 
-## Architecture
+## Архитектура
 
-- **entrypoint.sh** generates `/tmp/xray.runtime.json` at container start:
-  - Injects `http-in` / `socks-in` inbounds with auth and sniffing
-  - Injects `direct` outbound (freedom protocol) and routing rules
-  - Tags the first outbound in base config as `proxy`
-- **network_mode: host** — ports bind directly on the host
-- **dumb-init** as PID 1 for proper signal handling
-- Readiness check: both ports must respond within 30 seconds
+- **entrypoint.sh** генерирует `/tmp/xray.runtime.json` при старте контейнера:
+  - добавляет `http-in` / `socks-in` inbound'ы с аутентификацией и sniffing'ом
+  - добавляет `direct` outbound (freedom) и правила маршрутизации
+  - помечает первый outbound в базовом конфиге тегом `proxy`
+- **network_mode: host** — порты привязываются напрямую к хосту
+- **dumb-init** как PID 1 для корректной обработки сигналов
+- Проверка готовности: оба порта должны ответить в течение 30 секунд
 
-## Debugging
+## Отладка
 
 ```bash
-# Container logs
+# Логи контейнера
 docker compose logs -f vpn-proxy
 
-# Inspect generated runtime config
+# Посмотреть сгенерированный конфиг
 docker exec vpn-proxy cat /tmp/xray.runtime.json | jq
 ```
+
+## Ключевые слова
+
+Xray proxy, VLESS proxy, REALITY proxy, Amnezia VPN proxy, HTTP proxy Xray, SOCKS5 proxy Xray, Docker proxy VPN, обход блокировок, прокси-сервер Xray, прокси для браузера, Amnezia VPN конфиг, Xray Docker, split tunneling, раздельная маршрутизация, прокси Россия
