@@ -1,8 +1,8 @@
 # proxy-vpn
 
-[![Release](https://img.shields.io/github/v/release/nordz0r/proxy-vpn?style=flat-square)](https://github.com/nordz0r/proxy-vpn/releases)
+[![Release](https://img.shields.io/github/v/release/nordz0r/proxy-vpn?style=flat-square&color=brightgreen)](https://github.com/nordz0r/proxy-vpn/releases)
 [![Docker Image](https://img.shields.io/badge/ghcr.io-nordz0r%2Fproxy--vpn-blue?style=flat-square)](https://ghcr.io/nordz0r/proxy-vpn)
-[![License](https://img.shields.io/github/license/nordz0r/proxy-vpn?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)](LICENSE)
 
 **[Русская версия](README.md)**
 
