@@ -1,3 +1,7 @@
 conf/xray.json
 .env
 .idea/
+.claude/
+.kilocode/
+AGENTS.md
+CLAUDE.md

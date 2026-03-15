@@ -92,7 +92,36 @@ curl --socks5-hostname 127.0.0.1:1080 https://ipinfo.io/json
 
 ## TLS Termination (optional)
 
-See [`angie/stream-proxy.conf.example`](angie/stream-proxy.conf.example) for wrapping the proxy ports in TLS using Angie/nginx stream module.
+Example stream config for Angie/nginx (TLS termination in front of local proxy ports):
+
+```nginx
+# Ensure angie/nginx has:
+# stream {
+#   include /etc/angie/stream.d/*.conf;
+# }
+
+# HTTP proxy without TLS
+server {
+    listen 444;
+    proxy_pass 127.0.0.1:3128;
+}
+
+# HTTPS proxy over TLS
+server {
+    listen 446 ssl;
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    proxy_pass 127.0.0.1:3128;
+}
+
+# SOCKS5 over TLS (optional)
+# server {
+#     listen 445 ssl;
+#     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+#     proxy_pass 127.0.0.1:1080;
+# }
+```
 
 ## Architecture
 
