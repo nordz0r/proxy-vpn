@@ -32,6 +32,6 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 3128 1080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -sf -x http://127.0.0.1:3128 http://ifconfig.me > /dev/null || exit 1
+  CMD nc -z 127.0.0.1 "${PROXY_PORT:-3128}" && nc -z 127.0.0.1 "${SOCKS_PORT:-1080}" || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]

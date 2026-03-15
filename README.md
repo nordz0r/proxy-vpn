@@ -44,6 +44,7 @@ docker compose up --build -d
 | `PROXY_USER` | — | Single-user auth (fallback) |
 | `PROXY_PASS` | — | Single-user password (fallback) |
 | `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
+| `DIRECT_DOMAINS` | — | Comma/semicolon list of domains for direct bypass, supports wildcard prefix (`*.example.com`) |
 
 ### Authentication
 
@@ -60,6 +61,12 @@ PROXY_PASS=secret1
 # No variables set = open proxy (no auth)
 ```
 
+Direct bypass domains via env:
+
+```bash
+DIRECT_DOMAINS=*.corp.local,*.lan,example.internal
+```
+
 ### Routing
 
 The entrypoint automatically injects routing rules:
@@ -67,7 +74,7 @@ The entrypoint automatically injects routing rules:
 | Match | Action |
 |---|---|
 | `geoip:private` + `geoip:ru` | Direct (bypass tunnel) |
-| `geosite:private` + `geosite:category-ru` | Direct (bypass tunnel) |
+| `geosite:private` + `geosite:category-ru` + `domain:local` + `DIRECT_DOMAINS` | Direct (bypass tunnel) |
 | Everything else | Proxy (VLESS/REALITY) |
 
 ## Verify

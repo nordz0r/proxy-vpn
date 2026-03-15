@@ -6,6 +6,7 @@ XRAY_RUNTIME_CONFIG="/tmp/xray.runtime.json"
 PROXY_PORT="${PROXY_PORT:-3128}"
 SOCKS_PORT="${SOCKS_PORT:-1080}"
 METRICS_PORT="${METRICS_PORT:-}"
+DIRECT_DOMAINS="${DIRECT_DOMAINS:-}"
 
 cleanup() {
     echo "[entrypoint] Shutting down..."
@@ -54,11 +55,39 @@ prepare_xray_config() {
         metrics_port=0
     fi
 
+    local direct_domains_raw="${DIRECT_DOMAINS:-}"
+    local direct_domains_json='[]'
+    if [ -n "$direct_domains_raw" ]; then
+        direct_domains_raw="${direct_domains_raw//;/,}"
+        direct_domains_json=$(printf '%s' "$direct_domains_raw" | jq -R '
+            split(",")
+            | map(gsub("^\\s+|\\s+$"; ""))
+            | map(select(length > 0))
+            | map(
+                if startswith("*.") then .[2:]
+                elif startswith(".") then .[1:]
+                else .
+                end
+            )
+            | map(ascii_downcase)
+            | map(select(test("^[a-z0-9.-]+$")))
+            | map("domain:" + .)
+            | unique
+        ')
+
+        if [ "$(printf '%s' "$direct_domains_json" | jq 'length')" -eq 0 ]; then
+            echo "[entrypoint] ERROR: DIRECT_DOMAINS is set but no valid domains parsed."
+            exit 1
+        fi
+        echo "[entrypoint] Extra direct domains: $(printf '%s' "$direct_domains_json" | jq -r 'map(sub("^domain:"; "")) | join(", ")')"
+    fi
+
     jq \
         --argjson proxyPort "$PROXY_PORT" \
         --argjson socksPort "$SOCKS_PORT" \
         --arg authMode "$auth_mode" \
         --argjson accounts "$accounts_json" \
+        --argjson directDomains "$direct_domains_json" \
         --argjson metricsPort "$metrics_port" '
 
         # Strip managed inbounds and any untagged leftovers
@@ -120,7 +149,7 @@ prepare_xray_config() {
         | .routing = {
             "domainStrategy": "IPIfNonMatch",
             "rules": [
-                {"type": "field", "domain": ["geosite:private", "geosite:category-ru", "domain:local"], "outboundTag": "direct"},
+                {"type": "field", "domain": (["geosite:private", "geosite:category-ru", "domain:local"] + $directDomains), "outboundTag": "direct"},
                 {"type": "field", "ip": ["geoip:private", "geoip:ru"], "outboundTag": "direct"}
             ]
         }
