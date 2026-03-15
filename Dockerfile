@@ -16,7 +16,7 @@ RUN case "$TARGETARCH" in \
 # Stage 2: Final image
 FROM alpine:3.21
 
-RUN apk add --no-cache bash ca-certificates netcat-openbsd curl jq dumb-init tzdata nmap
+RUN apk add --no-cache bash ca-certificates netcat-openbsd curl jq dumb-init tzdata nmap bind-tools
 
 ENV TZ=Europe/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

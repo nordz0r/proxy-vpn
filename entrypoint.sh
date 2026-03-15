@@ -116,11 +116,11 @@ prepare_xray_config() {
             + [{"tag": "direct", "protocol": "freedom", "settings": {}}]
         )
 
-        # Routing: private networks and Russian domains bypass proxy
+        # Routing: private networks, Russian and .local domains bypass proxy
         | .routing = {
             "domainStrategy": "IPIfNonMatch",
             "rules": [
-                {"type": "field", "domain": ["geosite:private", "geosite:category-ru"], "outboundTag": "direct"},
+                {"type": "field", "domain": ["geosite:private", "geosite:category-ru", "domain:local"], "outboundTag": "direct"},
                 {"type": "field", "ip": ["geoip:private", "geoip:ru"], "outboundTag": "direct"}
             ]
         }
@@ -144,7 +144,7 @@ prepare_xray_config() {
           end
     ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
 
-    echo "[entrypoint] Routing: private networks and RU domains bypass proxy (direct)."
+    echo "[entrypoint] Routing: private networks, RU and .local domains bypass proxy (direct)."
 
     if [ "$metrics_port" -gt 0 ] 2>/dev/null; then
         echo "[entrypoint] Metrics enabled on port ${metrics_port} (http://127.0.0.1:${metrics_port}/debug/vars)"
