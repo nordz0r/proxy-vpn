@@ -32,6 +32,7 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 3128 1080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD nc -z 127.0.0.1 "${PROXY_PORT:-3128}" && nc -z 127.0.0.1 "${SOCKS_PORT:-1080}" || exit 1
+  CMD ([ -z "$HTTP_PORT" ] || nc -z 127.0.0.1 "$HTTP_PORT") && \
+      ([ -z "$SOCKS_PORT" ] || nc -z 127.0.0.1 "$SOCKS_PORT") || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]

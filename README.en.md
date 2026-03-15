@@ -6,11 +6,11 @@
 
 **[Русская версия](README.md)**
 
-HTTP/HTTPS and SOCKS5 proxy server powered by [Xray-core](https://github.com/XTLS/Xray-core) in a Docker container. Takes configurations exported from **[Amnezia VPN](https://amnezia.org/)** (VLESS + REALITY protocol) and turns them into a full-featured proxy for browsers, systems, or any application.
+HTTP and SOCKS5 proxy server powered by [Xray-core](https://github.com/XTLS/Xray-core) in a Docker container. Takes configurations exported from **[Amnezia VPN](https://amnezia.org/)** (VLESS + REALITY protocol) and turns them into a full-featured proxy for browsers, systems, or any application.
 
 ## Why
 
-Amnezia VPN generates Xray configurations (VLESS + REALITY) for censorship circumvention. This project takes that config and spins up an HTTP/SOCKS5 proxy server you can connect to from:
+Amnezia VPN generates Xray configurations (VLESS + REALITY) for censorship circumvention. This project takes that config and spins up an HTTP and/or SOCKS5 proxy server you can connect to from:
 
 - browsers (via proxy settings or extensions like FoxyProxy)
 - mobile devices and IoT
@@ -75,14 +75,16 @@ docker compose up --build -d
 
 | Variable | Default | Description |
 |---|---|---|
-| `PROXY_PORT` | `3128` | HTTP proxy port |
-| `SOCKS_PORT` | `1080` | SOCKS5 proxy port |
+| `HTTP_PORT` | — | HTTP proxy port (e.g., `3128`). If not set — HTTP proxy is not started |
+| `SOCKS_PORT` | — | SOCKS5 proxy port (e.g., `1080`). If not set — SOCKS5 proxy is not started |
 | `PROXY_USERS` | — | Multi-user auth: `user1:pass1,user2:pass2` |
 | `PROXY_USER` | — | Single-user login (fallback) |
 | `PROXY_PASS` | — | Single-user password (fallback) |
 | `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
 | `DIRECT_DOMAINS` | — | Domains for direct access (comma/semicolon separated), supports `*.example.com` |
 | `METRICS_PORT` | — | Xray HTTP metrics port (e.g., `9999`) |
+
+> **Note:** at least one port (`HTTP_PORT` or `SOCKS_PORT`) must be set, otherwise the container will not start.
 
 ### Authentication
 

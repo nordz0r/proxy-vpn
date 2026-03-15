@@ -3,10 +3,25 @@ set -e
 
 XRAY_CONFIG="${XRAY_CONFIG:-/etc/xray/conf.json}"
 XRAY_RUNTIME_CONFIG="/tmp/xray.runtime.json"
-PROXY_PORT="${PROXY_PORT:-3128}"
-SOCKS_PORT="${SOCKS_PORT:-1080}"
+HTTP_PORT="${HTTP_PORT:-}"
+SOCKS_PORT="${SOCKS_PORT:-}"
 METRICS_PORT="${METRICS_PORT:-}"
 DIRECT_DOMAINS="${DIRECT_DOMAINS:-}"
+
+# Validate: at least one inbound protocol must be enabled
+if [ -z "$HTTP_PORT" ] && [ -z "$SOCKS_PORT" ]; then
+    echo "[entrypoint] ERROR: No inbound protocols enabled. Set HTTP_PORT and/or SOCKS_PORT in .env"
+    exit 1
+fi
+
+# Validate port values are numeric
+for _var in HTTP_PORT SOCKS_PORT; do
+    _val="${!_var}"
+    if [ -n "$_val" ] && ! [[ "$_val" =~ ^[0-9]+$ ]]; then
+        echo "[entrypoint] ERROR: ${_var}=${_val} is not a valid port number."
+        exit 1
+    fi
+done
 
 cleanup() {
     echo "[entrypoint] Shutting down..."
@@ -82,9 +97,12 @@ prepare_xray_config() {
         echo "[entrypoint] Extra direct domains: $(printf '%s' "$direct_domains_json" | jq -r 'map(sub("^domain:"; "")) | join(", ")')"
     fi
 
+    local proxy_port_num="${HTTP_PORT:-0}"
+    local socks_port_num="${SOCKS_PORT:-0}"
+
     jq \
-        --argjson proxyPort "$PROXY_PORT" \
-        --argjson socksPort "$SOCKS_PORT" \
+        --argjson proxyPort "$proxy_port_num" \
+        --argjson socksPort "$socks_port_num" \
         --arg authMode "$auth_mode" \
         --argjson accounts "$accounts_json" \
         --argjson directDomains "$direct_domains_json" \
@@ -97,8 +115,7 @@ prepare_xray_config() {
                 (.tag // "") != "socks-in" and
                 (.tag // "") != ""
             )))
-            + [
-                {
+            + (if $proxyPort > 0 then [{
                     "tag": "http-in",
                     "listen": "0.0.0.0",
                     "port": $proxyPort,
@@ -113,8 +130,8 @@ prepare_xray_config() {
                         "enabled": true,
                         "destOverride": ["http", "tls"]
                     }
-                },
-                {
+                }] else [] end)
+            + (if $socksPort > 0 then [{
                     "tag": "socks-in",
                     "listen": "0.0.0.0",
                     "port": $socksPort,
@@ -127,8 +144,7 @@ prepare_xray_config() {
                         "enabled": true,
                         "destOverride": ["http", "tls"]
                     }
-                }
-            ]
+                }] else [] end)
         )
 
         # Tag first outbound as "proxy" if not tagged
@@ -182,11 +198,17 @@ prepare_xray_config() {
 
 prepare_xray_config
 
+# Log enabled protocols
+enabled=()
+[ -n "$HTTP_PORT" ] && enabled+=("HTTP:${HTTP_PORT}")
+[ -n "$SOCKS_PORT" ] && enabled+=("SOCKS:${SOCKS_PORT}")
+echo "[entrypoint] Enabled protocols: ${enabled[*]}"
+
 echo "[entrypoint] Starting Xray..."
 xray run -config "$XRAY_RUNTIME_CONFIG" &
 XRAY_PID=$!
 
-echo "[entrypoint] Waiting for HTTP proxy on port ${PROXY_PORT} and SOCKS proxy on port ${SOCKS_PORT}..."
+echo "[entrypoint] Waiting for readiness..."
 ready=false
 for i in $(seq 1 30); do
     if ! kill -0 "$XRAY_PID" 2>/dev/null; then
@@ -194,8 +216,12 @@ for i in $(seq 1 30); do
         exit 1
     fi
 
-    if nc -z 127.0.0.1 "${PROXY_PORT}" 2>/dev/null && nc -z 127.0.0.1 "${SOCKS_PORT}" 2>/dev/null; then
-        echo "[entrypoint] Xray is ready (HTTP:${PROXY_PORT}, SOCKS:${SOCKS_PORT})."
+    all_up=true
+    [ -n "$HTTP_PORT" ] && ! nc -z 127.0.0.1 "${HTTP_PORT}" 2>/dev/null && all_up=false
+    [ -n "$SOCKS_PORT" ] && ! nc -z 127.0.0.1 "${SOCKS_PORT}" 2>/dev/null && all_up=false
+
+    if $all_up; then
+        echo "[entrypoint] Xray is ready (${enabled[*]})."
         ready=true
         break
     fi
