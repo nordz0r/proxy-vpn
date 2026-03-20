@@ -39,6 +39,26 @@ Amnezia VPN генерирует конфигурации Xray (VLESS + REALITY)
 
 ## Быстрый старт
 
+### Одной вставкой на чистой машине
+
+```bash
+mkdir -p ~/proxy-vpn/conf && cd ~/proxy-vpn
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/docker-compose.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/.env.example
+curl -fsSL -o conf/xray.json https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/conf/xray.json.example
+
+# Отредактируйте conf/xray.json: сервер, UUID, publicKey, shortId, serverName
+# Отредактируйте .env: порты, логин/пароль прокси или оставьте auth-поля пустыми
+
+docker compose up -d
+```
+
+Проверка:
+
+```bash
+docker compose logs -f vpn-proxy
+```
+
 ### 1. Подготовьте конфиг Xray
 
 Экспортируйте конфигурацию из Amnezia VPN в формате Xray JSON или создайте вручную:

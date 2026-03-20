@@ -39,6 +39,26 @@ Private networks and Russian domains are routed **directly**, bypassing the tunn
 
 ## Quick Start
 
+### One paste on a clean host
+
+```bash
+mkdir -p ~/proxy-vpn/conf && cd ~/proxy-vpn
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/docker-compose.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/.env.example
+curl -fsSL -o conf/xray.json https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/conf/xray.json.example
+
+# Edit conf/xray.json: server, UUID, publicKey, shortId, serverName
+# Edit .env: ports, proxy login/password, or leave auth fields blank
+
+docker compose up -d
+```
+
+Validate:
+
+```bash
+docker compose logs -f vpn-proxy
+```
+
 ### 1. Prepare Xray config
 
 Export your configuration from Amnezia VPN in Xray JSON format, or create one manually:
