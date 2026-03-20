@@ -42,7 +42,7 @@ Private networks and Russian domains are routed **directly**, bypassing the tunn
 ### One paste on a clean host
 
 ```bash
-mkdir -p ~/proxy-vpn/conf && cd ~/proxy-vpn
+mkdir -p /opt/proxy-vpn/conf && cd /opt/proxy-vpn
 curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/docker-compose.yml
 curl -fsSL -o .env https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/.env.example
 curl -fsSL -o conf/xray.json https://raw.githubusercontent.com/nordz0r/proxy-vpn/main/conf/xray.json.example
