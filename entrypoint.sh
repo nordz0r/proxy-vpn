@@ -7,6 +7,7 @@ HTTP_PORT="${HTTP_PORT:-}"
 SOCKS_PORT="${SOCKS_PORT:-}"
 METRICS_PORT="${METRICS_PORT:-}"
 DIRECT_DOMAINS="${DIRECT_DOMAINS:-}"
+LOG_LEVEL="${LOG_LEVEL:-warning}"
 
 # Validate: at least one inbound protocol must be enabled
 if [ -z "$HTTP_PORT" ] && [ -z "$SOCKS_PORT" ]; then
@@ -31,12 +32,33 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
+normalize_optional_env() {
+    local value="${1:-}"
+
+    value="${value//$'\r'/}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+
+    if [ "$value" = '""' ] || [ "$value" = "''" ]; then
+        value=""
+    fi
+
+    printf '%s' "$value"
+}
+
 prepare_xray_config() {
     echo "[entrypoint] Preparing runtime Xray config..."
 
-    local users_raw="${PROXY_USERS:-}"
-    if [ -z "$users_raw" ] && [ -n "${PROXY_USER:-}" ] && [ -n "${PROXY_PASS:-}" ]; then
-        users_raw="${PROXY_USER}:${PROXY_PASS}"
+    local users_raw
+    local proxy_user
+    local proxy_pass
+
+    users_raw="$(normalize_optional_env "${PROXY_USERS:-}")"
+    proxy_user="$(normalize_optional_env "${PROXY_USER:-}")"
+    proxy_pass="$(normalize_optional_env "${PROXY_PASS:-}")"
+
+    if [ -z "$users_raw" ] && [ -n "$proxy_user" ] && [ -n "$proxy_pass" ]; then
+        users_raw="${proxy_user}:${proxy_pass}"
     fi
 
     local auth_mode="noauth"
@@ -106,9 +128,18 @@ prepare_xray_config() {
         --arg authMode "$auth_mode" \
         --argjson accounts "$accounts_json" \
         --argjson directDomains "$direct_domains_json" \
-        --argjson metricsPort "$metrics_port" '
+        --argjson metricsPort "$metrics_port" \
+        --arg logLevel "$LOG_LEVEL" '
+
+        # Logging: access log enabled at info/debug level
+        .log = {
+            "loglevel": $logLevel,
+            "access": (if ($logLevel == "info" or $logLevel == "debug") then "" else "none" end),
+            "error": ""
+        }
 
         # Strip managed inbounds and any untagged leftovers
+        |
         .inbounds = (
             ((.inbounds // []) | map(select(
                 (.tag // "") != "http-in" and
@@ -190,6 +221,7 @@ prepare_xray_config() {
     ' "$XRAY_CONFIG" > "$XRAY_RUNTIME_CONFIG"
 
     echo "[entrypoint] Routing: private networks, RU and .local domains bypass proxy (direct)."
+    echo "[entrypoint] Log level: ${LOG_LEVEL}$([ "$LOG_LEVEL" = "info" ] || [ "$LOG_LEVEL" = "debug" ] && echo ' (access log enabled)' || echo '')"
 
     if [ "$metrics_port" -gt 0 ] 2>/dev/null; then
         echo "[entrypoint] Metrics enabled on port ${metrics_port} (http://127.0.0.1:${metrics_port}/debug/vars)"

@@ -82,6 +82,7 @@ docker compose up --build -d
 | `PROXY_PASS` | — | Пароль (одиночный пользователь, fallback) |
 | `XRAY_CONFIG` | `/etc/xray/conf.json` | Путь к базовому конфигу внутри контейнера |
 | `DIRECT_DOMAINS` | — | Домены для прямого доступа (через запятую/точку с запятой), поддержка `*.example.com` |
+| `LOG_LEVEL` | `warning` | Уровень логирования Xray: `none`, `error`, `warning`, `info`, `debug`. При `info`/`debug` включается access-лог (IP клиента, назначение, маршрут) |
 | `METRICS_PORT` | — | Порт HTTP-метрик Xray (например, `9999`) |
 
 > **Примечание:** необходимо указать хотя бы один из портов (`HTTP_PORT` или `SOCKS_PORT`), иначе контейнер не запустится.
@@ -98,7 +99,10 @@ PROXY_USERS=alice:secret1,bob:secret2
 PROXY_USER=alice
 PROXY_PASS=secret1
 
-# Без переменных = открытый прокси (без аутентификации)
+# Пустые/незаполненные значения = открытый прокси (без аутентификации)
+# Например, можно оставить так:
+PROXY_USERS=
+PROXY_USER=
 ```
 
 ### Маршрутизация

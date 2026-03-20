@@ -82,6 +82,7 @@ docker compose up --build -d
 | `PROXY_PASS` | — | Single-user password (fallback) |
 | `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
 | `DIRECT_DOMAINS` | — | Domains for direct access (comma/semicolon separated), supports `*.example.com` |
+| `LOG_LEVEL` | `warning` | Xray log level: `none`, `error`, `warning`, `info`, `debug`. At `info`/`debug` access log is enabled (client IP, destination, route) |
 | `METRICS_PORT` | — | Xray HTTP metrics port (e.g., `9999`) |
 
 > **Note:** at least one port (`HTTP_PORT` or `SOCKS_PORT`) must be set, otherwise the container will not start.
@@ -98,7 +99,10 @@ PROXY_USERS=alice:secret1,bob:secret2
 PROXY_USER=alice
 PROXY_PASS=secret1
 
-# No variables set = open proxy (no auth)
+# Empty/unset values = open proxy (no auth)
+# For example, these can stay blank:
+PROXY_USERS=
+PROXY_USER=
 ```
 
 ### Routing
