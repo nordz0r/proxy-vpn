@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-XRAY_CONFIG="${XRAY_CONFIG:-/etc/xray/conf.json}"
+XRAY_CONFIG_FILE="${XRAY_CONFIG_FILE:-xray.json}"
+XRAY_CONFIG="/etc/xray/${XRAY_CONFIG_FILE}"
 XRAY_RUNTIME_CONFIG="/tmp/xray.runtime.json"
 HTTP_PORT="${HTTP_PORT:-}"
 SOCKS_PORT="${SOCKS_PORT:-}"
@@ -23,6 +24,12 @@ for _var in HTTP_PORT SOCKS_PORT; do
         exit 1
     fi
 done
+
+if [ ! -f "$XRAY_CONFIG" ]; then
+    echo "[entrypoint] ERROR: Xray config file not found: ${XRAY_CONFIG}"
+    echo "[entrypoint] Put the file into ./conf and set XRAY_CONFIG_FILE if needed."
+    exit 1
+fi
 
 cleanup() {
     echo "[entrypoint] Shutting down..."

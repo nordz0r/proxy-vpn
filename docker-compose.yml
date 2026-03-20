@@ -10,5 +10,5 @@ services:
       - "9999"   # Metrics (if METRICS_PORT=9999)
     network_mode: host
     volumes:
-      - ${PWD}/conf/xray.json:/etc/xray/conf.json:ro
+      - ${PWD}/conf:/etc/xray:ro
     restart: unless-stopped

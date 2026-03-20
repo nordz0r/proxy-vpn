@@ -49,6 +49,7 @@ curl -fsSL -o conf/xray.json https://raw.githubusercontent.com/nordz0r/proxy-vpn
 
 # Отредактируйте conf/xray.json: сервер, UUID, publicKey, shortId, serverName
 # Отредактируйте .env: порты, логин/пароль прокси или оставьте auth-поля пустыми
+# Если базовый JSON лежит в conf под другим именем, укажите его в XRAY_CONFIG_FILE
 
 docker compose up -d
 ```
@@ -72,7 +73,7 @@ cp conf/xray.json.example conf/xray.json
 
 ```bash
 cp .env.example .env
-# Отредактируйте .env — задайте логин и пароль для прокси
+# Отредактируйте .env — задайте логин/пароль и при необходимости XRAY_CONFIG_FILE
 ```
 
 ### 3. Запустите
@@ -100,12 +101,18 @@ docker compose up --build -d
 | `PROXY_USERS` | — | Мульти-аутентификация: `user1:pass1,user2:pass2` |
 | `PROXY_USER` | — | Логин (одиночный пользователь, fallback) |
 | `PROXY_PASS` | — | Пароль (одиночный пользователь, fallback) |
-| `XRAY_CONFIG` | `/etc/xray/conf.json` | Путь к базовому конфигу внутри контейнера |
+| `XRAY_CONFIG_FILE` | `xray.json` | Имя файла базового Xray JSON, который запускается из смонтированного каталога `./conf` |
 | `DIRECT_DOMAINS` | — | Домены для прямого доступа (через запятую/точку с запятой), поддержка `*.example.com` |
 | `LOG_LEVEL` | `warning` | Уровень логирования Xray: `none`, `error`, `warning`, `info`, `debug`. При `info`/`debug` включается access-лог (IP клиента, назначение, маршрут) |
 | `METRICS_PORT` | — | Порт HTTP-метрик Xray (например, `9999`) |
 
 > **Примечание:** необходимо указать хотя бы один из портов (`HTTP_PORT` или `SOCKS_PORT`), иначе контейнер не запустится.
+
+Каталог `./conf` монтируется в контейнер целиком как `/etc/xray`, а `XRAY_CONFIG_FILE` выбирает, какой JSON запускать. Например:
+
+```bash
+XRAY_CONFIG_FILE=amnezia-prod.json
+```
 
 ### Аутентификация
 

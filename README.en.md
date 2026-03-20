@@ -49,6 +49,7 @@ curl -fsSL -o conf/xray.json https://raw.githubusercontent.com/nordz0r/proxy-vpn
 
 # Edit conf/xray.json: server, UUID, publicKey, shortId, serverName
 # Edit .env: ports, proxy login/password, or leave auth fields blank
+# If your base JSON is stored in conf under another name, set XRAY_CONFIG_FILE
 
 docker compose up -d
 ```
@@ -72,7 +73,7 @@ cp conf/xray.json.example conf/xray.json
 
 ```bash
 cp .env.example .env
-# Edit .env — set proxy credentials
+# Edit .env — set proxy credentials and XRAY_CONFIG_FILE if needed
 ```
 
 ### 3. Run
@@ -100,12 +101,18 @@ docker compose up --build -d
 | `PROXY_USERS` | — | Multi-user auth: `user1:pass1,user2:pass2` |
 | `PROXY_USER` | — | Single-user login (fallback) |
 | `PROXY_PASS` | — | Single-user password (fallback) |
-| `XRAY_CONFIG` | `/etc/xray/conf.json` | Base config path inside container |
+| `XRAY_CONFIG_FILE` | `xray.json` | Base Xray JSON filename to run from the mounted host `./conf` directory |
 | `DIRECT_DOMAINS` | — | Domains for direct access (comma/semicolon separated), supports `*.example.com` |
 | `LOG_LEVEL` | `warning` | Xray log level: `none`, `error`, `warning`, `info`, `debug`. At `info`/`debug` access log is enabled (client IP, destination, route) |
 | `METRICS_PORT` | — | Xray HTTP metrics port (e.g., `9999`) |
 
 > **Note:** at least one port (`HTTP_PORT` or `SOCKS_PORT`) must be set, otherwise the container will not start.
+
+The entire `./conf` directory is mounted into the container as `/etc/xray`, and `XRAY_CONFIG_FILE` selects which JSON file to run. For example:
+
+```bash
+XRAY_CONFIG_FILE=amnezia-prod.json
+```
 
 ### Authentication
 
