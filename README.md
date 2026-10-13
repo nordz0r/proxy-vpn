@@ -190,6 +190,14 @@ server {
 
 ## Архитектура
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/architecture-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/architecture-light.svg">
+    <img alt="Архитектура proxy-vpn: клиенты → http-in/socks-in → маршрутизация Xray → direct (RU/частные) или прокси VLESS + REALITY" src=".github/assets/architecture-light.svg" width="100%">
+  </picture>
+</p>
+
 - **entrypoint.sh** генерирует `/tmp/xray.runtime.json` при старте контейнера:
   - добавляет `http-in` / `socks-in` inbound'ы с аутентификацией и sniffing'ом
   - добавляет `direct` outbound (freedom) и правила маршрутизации

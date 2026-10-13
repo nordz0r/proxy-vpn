@@ -190,6 +190,14 @@ server {
 
 ## Architecture
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/architecture-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/architecture-light.svg">
+    <img alt="proxy-vpn architecture: clients → http-in/socks-in → Xray routing → direct (RU/private) or VLESS + REALITY proxy" src=".github/assets/architecture-light.svg" width="100%">
+  </picture>
+</p>
+
 - **entrypoint.sh** generates `/tmp/xray.runtime.json` at container start:
   - injects `http-in` / `socks-in` inbounds with auth and sniffing
   - injects `direct` outbound (freedom protocol) and routing rules

@@ -1,0 +1,232 @@
+{
+ "schemaVersion": "0.2.0",
+ "kind": "graph",
+ "id": "proxy-vpn-architecture",
+ "generatedAt": "2026-10-13T18:00:00.000Z",
+ "title": "proxy-vpn architecture",
+ "summary": "Clients connect to HTTP/SOCKS5 inbounds; Xray routes RU/private traffic direct and the rest through VLESS + REALITY.",
+ "lenses": [
+  "architecture"
+ ],
+ "layout": {
+  "direction": "right",
+  "laneOrder": [
+   "client",
+   "box",
+   "route",
+   "out"
+  ],
+  "rank": {
+   "app": 1,
+   "env": 0,
+   "entry": 1,
+   "inb": 2,
+   "rules": 2,
+   "direct": 1,
+   "proxy": 3,
+   "vpn": 4
+  }
+ },
+ "provenance": {
+  "repo": {
+   "owner": "nordz0r",
+   "name": "proxy-vpn",
+   "host": "github.com"
+  },
+  "base": {
+   "sha": "0000000000000000000000000000000000000000",
+   "ref": "main"
+  },
+  "head": {
+   "sha": "0000000000000000000000000000000000000000",
+   "ref": "main"
+  },
+  "generator": {
+   "name": "manual",
+   "version": "1.0.0"
+  }
+ },
+ "lanes": [
+  {
+   "id": "client",
+   "label": "Clients",
+   "subtitle": "browser · apps · system",
+   "order": 0
+  },
+  {
+   "id": "box",
+   "label": "Container",
+   "subtitle": "network_mode: host",
+   "order": 1
+  },
+  {
+   "id": "route",
+   "label": "Xray routing",
+   "subtitle": "injected by entrypoint",
+   "order": 2
+  },
+  {
+   "id": "out",
+   "label": "Outbound",
+   "subtitle": "Xray outbounds",
+   "order": 3
+  }
+ ],
+ "nodes": [
+  {
+   "id": "app",
+   "label": "Browser / apps",
+   "kind": "ui",
+   "delta": "unchanged",
+   "lane": "client",
+   "subtitle": "HTTP or SOCKS5 proxy",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "env",
+   "label": ".env + conf/xray.json",
+   "kind": "config",
+   "delta": "unchanged",
+   "lane": "box",
+   "subtitle": "Amnezia VLESS config",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "entry",
+   "label": "entrypoint.sh",
+   "kind": "job",
+   "delta": "unchanged",
+   "lane": "box",
+   "subtitle": "builds xray.runtime.json",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "inb",
+   "label": "http-in / socks-in",
+   "kind": "service",
+   "delta": "unchanged",
+   "lane": "box",
+   "subtitle": "auth + sniffing",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "rules",
+   "label": "Routing rules",
+   "kind": "module",
+   "delta": "unchanged",
+   "lane": "route",
+   "subtitle": "geoip/geosite ru, DIRECT_DOMAINS",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "direct",
+   "label": "direct",
+   "kind": "service",
+   "delta": "unchanged",
+   "lane": "out",
+   "subtitle": "freedom outbound",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "proxy",
+   "label": "proxy",
+   "kind": "service",
+   "delta": "unchanged",
+   "lane": "out",
+   "subtitle": "VLESS + REALITY",
+   "files": [],
+   "badges": []
+  },
+  {
+   "id": "vpn",
+   "label": "VPN server",
+   "kind": "external",
+   "delta": "unchanged",
+   "lane": "out",
+   "subtitle": "Xray / Amnezia server",
+   "files": [],
+   "badges": []
+  }
+ ],
+ "edges": [
+  {
+   "id": "e0",
+   "from": "env",
+   "to": "entry",
+   "kind": "data",
+   "delta": "unchanged",
+   "emphasis": "normal",
+   "animated": true,
+   "files": []
+  },
+  {
+   "id": "e1",
+   "from": "entry",
+   "to": "inb",
+   "kind": "dependency",
+   "delta": "unchanged",
+   "emphasis": "muted",
+   "animated": false,
+   "files": []
+  },
+  {
+   "id": "e2",
+   "from": "app",
+   "to": "inb",
+   "kind": "http",
+   "delta": "unchanged",
+   "emphasis": "hero",
+   "animated": true,
+   "files": []
+  },
+  {
+   "id": "e3",
+   "from": "inb",
+   "to": "rules",
+   "kind": "call",
+   "delta": "unchanged",
+   "emphasis": "hero",
+   "animated": true,
+   "files": []
+  },
+  {
+   "id": "e4",
+   "from": "rules",
+   "to": "direct",
+   "kind": "call",
+   "delta": "unchanged",
+   "label": "RU / private",
+   "emphasis": "normal",
+   "animated": true,
+   "files": []
+  },
+  {
+   "id": "e5",
+   "from": "rules",
+   "to": "proxy",
+   "kind": "call",
+   "delta": "unchanged",
+   "label": "everything else",
+   "emphasis": "hero",
+   "animated": true,
+   "files": []
+  },
+  {
+   "id": "e6",
+   "from": "proxy",
+   "to": "vpn",
+   "kind": "rpc",
+   "delta": "unchanged",
+   "emphasis": "hero",
+   "animated": true,
+   "files": []
+  }
+ ],
+ "flows": []
+}
