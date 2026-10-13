@@ -1,3 +1,11 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-light.svg">
+    <img alt="nordz0r/proxy-vpn — HTTP/SOCKS5 прокси на Xray" src=".github/assets/banner-light.svg" width="100%">
+  </picture>
+</p>
+
 # proxy-vpn
 
 [![Release](https://img.shields.io/github/v/release/nordz0r/proxy-vpn?style=flat-square&color=brightgreen)](https://github.com/nordz0r/proxy-vpn/releases)
